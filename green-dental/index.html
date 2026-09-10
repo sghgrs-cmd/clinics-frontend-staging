@@ -1,0 +1,2101 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F6F2EC">
+
+<!--
+================================================================================
+  CLINIC SHEET
+
+  Files:  index.html  ·  app.js  ·  portrait.jpg   (three, that is all)
+  Deploy: upload the folder. No build step, no server, no dependencies.
+
+  Re-skin checklist (about 20 minutes) — see README.md for the long version:
+    1. <title>, <meta description>, og: tags, <link rel=canonical>
+    2. JSON-LD at the foot of this file — name, address, phone, hours
+    3. The :root block in the <style> below — --accent, --accent-inv,
+       --paper, --ink, --portrait-shadow, --mark-opacity, --map-filter
+    4. portrait.jpg beside index.html. ANY headshot works: it is greyscaled
+       and re-tinted to the palette. --portrait-focal moves the crop.
+    5. app.js -> CLINIC.FORM_ENDPOINT.  THE FORM IS DEAD UNTIL YOU SET THIS.
+    6. Strings, in document order (search for data-c=):
+         brand.name        brand.tagline
+         hero.eyebrow      hero.line1/2/3     hero.lede      hero.cta
+         hero.meta1/2      (phone-only hero foot)
+         proof.1..4        (value + label)
+         doctor.name       doctor.creds       doctor.bio1/2  doctor.quote
+         doctor.school1..3 doctor.caption
+         treatment.1..5    (name + note + visits + span)
+         approach.head     approach.step1..4  shade.*
+         words.1..3        (quote + name + detail)  — real reviews only
+         words.kicker       words.trust.1..3   (title + body — Standards
+                            section; permanent, unrelated to review count)
+         book.head         book.phone  book.email  book.address  book.hours
+         loc.address       loc.score   loc.source  loc.phone1..3
+         review.1..3       (quote + name)
+    >>>  map.embed         map.directions   <<<  THESE TWO ARE URLs, NOT TEXT.
+         The embed src and the directions href both carry the Beverly Hills
+         address hard-coded and URL-encoded. Change the address copy and forget
+         these, and the site sends patients to the wrong building.
+         footer.legal      footer.note      footer.credit
+================================================================================
+-->
+
+<title>Green Dental &amp; Orthodontics</title>
+<meta name="description" content="We are equipped to meet all your cosmetic, restorative, implantology, orthodontics, periodontics, endodontics, and oral surgery needs. Cosmetic Dentistry · Sh">
+<link rel="canonical" href="https://greendental.com">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Green Dental &amp; Orthodontics">
+<meta property="og:description" content="We are equipped to meet all your cosmetic, restorative, implantology, orthodontics, periodontics, endodontics, and oral surgery needs. Cosmetic Dentistry · Sh">
+<meta property="og:url" content="https://greendental.com">
+<meta name="twitter:card" content="summary">
+
+<link rel="preload" as="font" type="font/woff2" href="fraunces-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="inter-400.woff2" crossorigin>
+<style>
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 400;
+  font-display: swap;
+  src: url('fraunces-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: italic;
+  font-weight: 300 400;
+  font-display: swap;
+  src: url('fraunces-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('inter-600.woff2') format('woff2');
+}
+</style>
+
+<!-- ============================================================================
+     STYLES — inlined on purpose.
+     As a separate file this was the last render-blocking request on the page
+     (280ms plus a whole round trip on 4G). Inline it and there are zero
+     render-blocking resources: the font CSS loads async, app.js is deferred.
+     The token block below is the entire re-skin surface.
+     ============================================================================ -->
+<style>
+/* =============================================================================
+   WARREN — luxury practice template
+   styles.css
+
+   Everything that changes per clinic is in the TOKENS block below.
+   Nothing else in this file should need editing to re-skin.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. TOKENS
+   -------------------------------------------------------------------------- */
+:root{
+
+  /* --- colour ---------------------------------------------------------------
+     Six values carry the whole site. The accent is deliberately deeper than the
+     usual clay so it clears 4.5:1 on paper at 11px — the size it is used at.
+     --accent-inv is the same hue lifted for the dark sections, where the base
+     accent only reaches 3.4:1 and would fail.                                */
+  --paper:#F7F4ED;
+  --paper-2:#EFEAE1;
+  --ink:#1B1713;
+  --ink-deep:#0F0D0A;
+  --stone:#6B6357;
+  --accent:#8F6428;
+  --accent-inv:#D29E56;
+
+  --rule:rgba(27,23,19,.14);
+  --rule-soft:rgba(27,23,19,.08);
+  --rule-inv:rgba(247,244,237,.18);
+  --rule-inv-soft:rgba(247,244,237,.09);
+
+  /* --- the one photograph ---------------------------------------------------
+     The portrait is greyscaled and re-tinted so whatever headshot the clinic
+     already owns lands inside the palette. --portrait-shadow is the colour the
+     blacks become: warm brown by default, #22303A for a cool clinical read.  */
+  --portrait-shadow:#674A32;
+  --portrait-focal:50% 28%;   /* object-position — move the crop, not the file */
+  --portrait-lift:1.04;       /* brightness nudge for a dark original          */
+  --portrait-ratio:4/5;       /* 4/5 upright · 1/1 square · 3/2 landscape      */
+
+  /* --- line art -------------------------------------------------------------
+     The hero construction, the footer echo, the crop marks.                  */
+  --mark-color:var(--stone);
+  --mark-opacity:.30;
+  --mark-accent-opacity:.55;
+
+  /* Google draws the map; all we can do is filter it. Grayscale first, then
+     warm it back toward the paper so it stops reading as a blue web map. */
+  /* `none` = Google's own colours, which read clearest. The frame and mat do
+     the work of making it belong. Set a filter here only if a clinic asks. */
+  --map-filter:none;
+
+  /* --- type --------------------------------------------------------------- */
+  --font-display:'Fraunces','Fraunces fallback',Georgia,'Times New Roman',serif;
+  --font-body:'Inter','Inter fallback',system-ui,-apple-system,'Segoe UI',sans-serif;
+
+  --fs-xl:clamp(2.35rem,12.2vw,8.5rem);
+  --fs-l:clamp(2.25rem,6vw,4.5rem);
+  --fs-m:clamp(1.75rem,4.2vw,3rem);
+  --fs-s:clamp(1.375rem,2.6vw,1.875rem);
+  --fs-lede:clamp(1.125rem,1.6vw,1.375rem);
+  --fs-body:clamp(1rem,.55rem + .6vw,1.0625rem);
+  --fs-micro:.6875rem;
+
+  /* --- space -------------------------------------------------------------- */
+  --gutter:clamp(1.5rem,6vw,5rem);
+  --section:clamp(4rem,11vw,10rem);
+  --maxw:1360px;
+  --measure:62ch;
+
+  /* --- motion: two curves, three durations, nothing else ------------------ */
+  --dur-fast:.2s;
+  --dur:.6s;
+  --dur-slow:.9s;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-io:cubic-bezier(.65,0,.35,1);
+}
+
+/* -----------------------------------------------------------------------------
+   2. METRIC-MATCHED FALLBACKS
+   Holds the layout still while the webfonts load. Values are tuned by eye
+   against Fraunces and Inter; they reduce the swap shift, not eliminate it.
+   -------------------------------------------------------------------------- */
+@font-face{
+  font-family:'Fraunces fallback';
+  src:local('Georgia'),local('Times New Roman');
+  size-adjust:103%;ascent-override:92%;descent-override:24%;line-gap-override:0%;
+}
+@font-face{
+  font-family:'Inter fallback';
+  src:local('Helvetica Neue'),local('Arial');
+  size-adjust:107%;ascent-override:90%;descent-override:22%;line-gap-override:0%;
+}
+
+/* -----------------------------------------------------------------------------
+   3. RESET
+   -------------------------------------------------------------------------- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+body{
+  font-family:var(--font-body);
+  font-size:var(--fs-body);
+  line-height:1.65;
+  color:var(--ink);
+  background:var(--paper);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-variant-numeric:tabular-nums;
+}
+/* clip rather than hidden: hidden can turn the element into a scroll
+   container. Set on both so a real overflow is contained, not masked. */
+html,body{overflow-x:hidden;overflow-x:clip}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+ul,ol{list-style:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+::selection{background:var(--accent);color:var(--paper)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.dark :focus-visible{outline-color:var(--accent-inv)}
+
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:200;
+  background:var(--ink);color:var(--paper);padding:.75rem 1.25rem;
+  font-size:var(--fs-micro);letter-spacing:.2em;text-transform:uppercase;
+}
+.skip:focus{left:0}
+
+/* -----------------------------------------------------------------------------
+   SCROLLBAR — hairline track, accent thumb, no radius
+   -------------------------------------------------------------------------- */
+@media (hover:hover) and (pointer:fine){
+html{}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:var(--paper-2);border-left:1px solid var(--rule)}
+::-webkit-scrollbar-thumb{background:var(--accent);border:4px solid var(--paper-2);border-left-width:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink)}
+::-webkit-scrollbar-corner{background:var(--paper-2)}
+/* end caps, drawn in the accent. Square, like everything else here — add a
+   radius on the thumb above if a clinic wants the softer look. */
+::-webkit-scrollbar-button:single-button{
+  background:var(--paper-2);display:block;height:12px;width:12px;
+  background-repeat:no-repeat;background-position:center;background-size:7px;
+}
+::-webkit-scrollbar-button:single-button:vertical:decrement{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='%238F6428'%3E%3Cpath d='M5 2 1 8h8z'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:vertical:increment{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='%238F6428'%3E%3Cpath d='M5 8 9 2H1z'/%3E%3C/svg%3E");
+}
+} /* end fine-pointer block */
+
+/* Belt and braces. Some Android browsers report pointer:fine, which let the
+   styled 12px bar through. Kill it outright on anything without a real hover. */
+@media (hover:none),(pointer:coarse){
+  html,body{scrollbar-width:none;-ms-overflow-style:none}
+  html::-webkit-scrollbar,body::-webkit-scrollbar,::-webkit-scrollbar{width:0;height:0;display:none}
+  ::-webkit-scrollbar-track,::-webkit-scrollbar-thumb,::-webkit-scrollbar-button{display:none}
+}
+
+/* -----------------------------------------------------------------------------
+   CURSOR — dot and ring, different lag, difference-blended so it inverts
+   itself over the dark sections instead of disappearing into them.
+
+   `cursor:none` is applied from JS after both elements exist, never from this
+   stylesheet: if the script fails, the visitor keeps a normal pointer.
+   Gated on (pointer:fine), not on viewport width — a touchscreen laptop at
+   1200px must not get a cursor it cannot use.
+   -------------------------------------------------------------------------- */
+/* Hiding is instant, showing fades. The base rule carries no opacity
+   transition, so dropping .cursor-on removes the custom cursor on the same
+   frame — otherwise it would linger over the scrollbar next to the system
+   arrow for the length of the fade. */
+#cur-dot,#cur-ring{
+  position:fixed;top:0;left:0;border-radius:50%;
+  background:transparent;mix-blend-mode:difference;
+  pointer-events:none;opacity:0;will-change:transform;
+  transform:translate(-100px,-100px);
+}
+#cur-dot{
+  width:7px;height:7px;background:#fff;z-index:101;
+  transition:width .28s var(--ease-out),height .28s var(--ease-out);
+}
+#cur-ring{
+  width:34px;height:34px;border:1px solid #fff;z-index:100;
+  transition:width .45s var(--ease-out),height .45s var(--ease-out),
+             border-radius .45s var(--ease-out);
+}
+html.cursor-on #cur-dot{
+  opacity:1;
+  transition:width .28s var(--ease-out),height .28s var(--ease-out),opacity .22s linear .03s;
+}
+html.cursor-on #cur-ring{
+  opacity:1;
+  transition:width .45s var(--ease-out),height .45s var(--ease-out),
+             border-radius .45s var(--ease-out),opacity .22s linear .03s;
+}
+/* over a link or button: the dot is swallowed by the ring */
+#cur-dot.is-over{width:0;height:0}
+#cur-ring.is-over{width:62px;height:62px}
+/* over a text field: the ring becomes an I-beam */
+#cur-dot.is-text{width:0;height:0}
+#cur-ring.is-text{width:2px;height:26px;border-radius:0;border-width:0;background:#fff}
+@media (pointer:coarse),(prefers-reduced-motion:reduce){#cur-dot,#cur-ring{display:none}}
+
+/* paper grain — one fixed overlay, whole site, no request, no file */
+body::after{
+  content:"";position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.04;
+}
+@media (min-width: 900px) {
+  body::after {
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23paper)'/%3E%3C/svg%3E");
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   4. TYPE PRIMITIVES
+   -------------------------------------------------------------------------- */
+.d-xl,.d-l,.d-m,.d-s{
+  font-family:var(--font-display);
+  letter-spacing:-.022em;
+  text-wrap:balance;
+}
+/* Fraunces carries an optical-size axis. Holding every level at opsz 144 makes
+   the smaller ones read thin and brittle — a 22px heading drawn for a 144px
+   billboard. Optical size and weight now move together, so the scale has real
+   density contrast and not just four sizes of one weight. */
+.d-xl{font-size:var(--fs-xl);line-height:.98;letter-spacing:-.032em;font-weight:300;font-variation-settings:'opsz' 144}
+.d-l {font-size:var(--fs-l); line-height:1.02;font-weight:300;font-variation-settings:'opsz' 120}
+.d-m {font-size:var(--fs-m); line-height:1.14;letter-spacing:-.014em;font-weight:330;font-variation-settings:'opsz' 72}
+.d-s {font-size:var(--fs-s); line-height:1.2; letter-spacing:-.008em;font-weight:380;font-variation-settings:'opsz' 40}
+@media (min-width:900px){.d-xl{line-height:.92}}
+
+em,.em{font-style:italic;font-weight:inherit;color:var(--accent)}
+.dark em,.dark .em{color:var(--accent-inv)}
+
+.eyebrow{
+  font-size:var(--fs-micro);font-weight:600;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--accent);line-height:1.4;
+}
+.dark .eyebrow{color:var(--accent-inv)}
+.eyebrow--quiet{color:var(--stone)}
+.dark .eyebrow--quiet{color:rgba(247,244,237,.6)}
+
+.lede{font-size:var(--fs-lede);line-height:1.5;color:var(--stone);max-width:34ch;text-wrap:pretty}
+.dark .lede{color:rgba(247,244,237,.72)}
+.body{max-width:var(--measure);color:var(--stone);text-wrap:pretty}
+.body + .body{margin-top:1.15em}
+.body strong{color:var(--ink);font-weight:600}
+.dark .body{color:rgba(247,244,237,.72)}
+.dark .body strong{color:var(--paper)}
+
+/* -----------------------------------------------------------------------------
+   5. LAYOUT
+   -------------------------------------------------------------------------- */
+.wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gutter)}
+.section{padding-block:var(--section)}
+[id]{scroll-margin-top:5rem}
+.dark{background:var(--ink-deep);color:var(--paper)}
+.rule{height:1px;background:var(--rule);transform-origin:left;border:0;display:block}
+.dark .rule{background:var(--rule-inv)}
+
+/* -----------------------------------------------------------------------------
+   6. BUTTONS — 1px rule, ink fill wiping up from the baseline.
+   No radius, no shadow, no gradient, no scale.
+   -------------------------------------------------------------------------- */
+.btn{
+  position:relative;display:inline-flex;align-items:center;gap:.75rem;
+  padding:1.05rem 1.9rem;border:1px solid var(--ink);
+  font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  overflow:hidden;isolation:isolate;color:var(--ink);
+  transition:color var(--dur-fast) var(--ease-io),border-color var(--dur-fast) linear;
+}
+.btn::before{
+  content:"";position:absolute;inset:0;z-index:-1;background:var(--ink);
+  transform:translateY(101%);transition:transform var(--dur) var(--ease-out);
+}
+.btn:hover,.btn:focus-visible{color:var(--paper)}
+.btn:hover::before,.btn:focus-visible::before{transform:translateY(0)}
+.btn__arrow{transition:transform var(--dur) var(--ease-out)}
+.btn:hover .btn__arrow{transform:translateX(4px)}
+.btn--sm{padding:.8rem 1.4rem}
+.btn--filled{background:var(--ink);color:var(--paper)}
+.btn--filled::before{background:var(--accent);transform:translateY(101%)}
+.btn--filled:hover,.btn--filled:focus-visible{color:var(--paper);border-color:var(--accent)}
+.dark .btn{border-color:var(--rule-inv);color:var(--paper)}
+.dark .btn::before{background:var(--paper)}
+.dark .btn:hover,.dark .btn:focus-visible{color:var(--ink);border-color:var(--paper)}
+.dark .btn--filled{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.dark .btn--filled::before{background:var(--accent-inv)}
+.dark .btn--filled:hover,.dark .btn--filled:focus-visible{color:var(--ink);border-color:var(--accent-inv)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+/* -----------------------------------------------------------------------------
+   7. NAV
+   -------------------------------------------------------------------------- */
+.nav{
+  position:fixed;inset:0 0 auto;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1.15rem var(--gutter);border-bottom:1px solid transparent;
+  transition:transform var(--dur) var(--ease-out),background var(--dur-fast) linear,border-color var(--dur-fast) linear;
+}
+.nav.is-stuck{
+  background:var(--paper);
+  border-bottom-color:var(--rule);
+}
+@media (min-width: 900px) {
+  .nav.is-stuck {
+    background:rgba(247,244,237,.92);
+    background:color-mix(in srgb,var(--paper) 92%,transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+.nav.is-hidden{transform:translateY(-101%)}
+.nav__progress{position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:var(--accent);transform:scaleX(0);transform-origin:left}
+
+.brand{display:block;line-height:1}
+.brand__name{font-family:var(--font-display);font-weight:400;font-variation-settings:'opsz' 30;font-size:1.0625rem;letter-spacing:.16em;text-transform:uppercase;display:block}
+.brand__tag{display:block;margin-top:.4rem;font-size:.5625rem;letter-spacing:.24em;text-transform:uppercase;color:var(--stone);font-weight:600}
+
+.nav__links{display:none}
+.nav__link{position:relative;font-size:var(--fs-micro);font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding-block:.35rem}
+.nav__link::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--accent);
+  transform:scaleX(0);transform-origin:left;transition:transform var(--dur-fast) var(--ease-io);
+}
+.nav__link:hover::after,.nav__link.is-current::after{transform:scaleX(1)}
+.nav__right{display:flex;align-items:center;gap:1.25rem}
+.nav__cta{display:none}
+.menu-btn{font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  display:inline-flex;align-items:center;min-height:44px;padding-inline:.35rem;margin-inline:-.35rem}
+@media (min-width:1024px){
+  .nav{padding-block:1.4rem}
+  .nav__links{display:flex;align-items:center;gap:2.5rem}
+  .nav__cta{display:inline-flex}
+  .menu-btn{display:none}
+}
+
+/* full-screen menu */
+.menu{
+  position:fixed;inset:0;z-index:55;background:var(--paper);
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:1.15rem var(--gutter) calc(2rem + env(safe-area-inset-bottom));
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  clip-path:inset(0 0 100% 0);visibility:hidden;
+  transition:clip-path var(--dur) var(--ease-out),visibility 0s linear var(--dur);
+}
+.menu[data-open="true"]{clip-path:inset(0 0 0 0);visibility:visible;transition:clip-path var(--dur) var(--ease-out),visibility 0s}
+.menu__top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.menu__links{margin-block:auto;padding-block:2rem}
+.menu__link{
+  display:block;font-family:var(--font-display);font-weight:300;
+  font-variation-settings:'opsz' 96;font-size:clamp(2.25rem,10vw,3.25rem);
+  line-height:1.22;letter-spacing:-.02em;opacity:0;transform:translateY(18px);
+  transition:opacity var(--dur) var(--ease-out),transform var(--dur) var(--ease-out),color var(--dur-fast) linear;
+}
+.menu[data-open="true"] .menu__link{opacity:1;transform:none}
+.menu__link:nth-child(1){transition-delay:.06s}
+.menu__link:nth-child(2){transition-delay:.12s}
+.menu__link:nth-child(3){transition-delay:.18s}
+.menu__link:nth-child(4){transition-delay:.24s}
+.menu__link:hover{color:var(--accent)}
+.menu__foot{border-top:1px solid var(--rule);padding-top:1.5rem;display:grid;gap:.5rem}
+.menu__foot a{font-size:var(--fs-micro);letter-spacing:.16em;text-transform:uppercase;color:var(--stone)}
+
+/* -----------------------------------------------------------------------------
+   8. HERO + THE ONE MARK
+   A compass construction: overlapping arcs on a shared baseline, golden
+   division ticks, vesica crosshairs, one accent curve. The geometry a smile is
+   planned on, with every label stripped off. It bleeds off the right edge so it
+   reads as a fragment of a larger drawing rather than a centred shape.
+   -------------------------------------------------------------------------- */
+.hero{
+  position:relative;overflow:hidden;
+  min-height:100vh;min-height:100svh;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding-block:8rem 2.5rem;
+}
+.hero__inner{position:relative;z-index:1;display:flex;flex-direction:column;flex:1}
+
+/* CLS: the line drawings are absolutely positioned against containers whose
+   height moves when Fraunces swaps in. Lighthouse attributed 0.186 of 0.193 to
+   exactly this. Hold them back until the fonts have settled — they are
+   decorative and revealed on scroll anyway, so nothing is lost. */
+/* The figmarks and the footer mark sit in containers whose height moves when
+   Fraunces lands, so they stay gated. The hero mark lives inside a container
+   pinned to 100svh — it cannot shift — so holding it back only delayed the
+   Speed Index for nothing. */
+.js .figmark,.js .foot__mark{visibility:hidden}
+.js.fonts-ready .figmark,.js.fonts-ready .foot__mark{visibility:visible}
+
+.mark{
+  position:absolute;z-index:0;pointer-events:none;
+  color:var(--mark-color);opacity:var(--mark-opacity);
+  width:186vw;top:-3vh;right:-70vw;
+  transform:translateY(var(--drift,0px));
+}
+.mark svg{width:100%;height:auto;display:block}
+.mark [data-draw]{fill:none;stroke:currentColor;stroke-width:1;vector-effect:non-scaling-stroke;stroke-linecap:round}
+.mark [data-accent]{stroke:var(--accent);opacity:var(--mark-accent-opacity)}
+.js .mark [data-draw]{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.6s var(--ease-out)}
+.js .mark.is-in [data-draw]{stroke-dashoffset:0}
+.mark [data-draw]:nth-child(1){transition-delay:.10s}
+.mark [data-draw]:nth-child(2){transition-delay:.22s}
+.mark [data-draw]:nth-child(3){transition-delay:.34s}
+.mark [data-draw]:nth-child(4){transition-delay:.46s}
+.mark [data-draw]:nth-child(5){transition-delay:.58s}
+.mark [data-draw]:nth-child(6){transition-delay:.70s}
+.mark [data-draw]:nth-child(n+7){transition-delay:.82s}
+
+.hero__eyebrow{display:flex;align-items:center;gap:1rem;margin-bottom:auto}
+.hero__eyebrow .rule{flex:1;max-width:120px}
+.hero__head{margin-block:2.5rem 2rem}
+.hero__lede{margin-bottom:2.75rem}
+.hero__foot{display:none}
+.hero__foot .rule{margin-bottom:1.15rem}
+.hero__meta{
+  display:flex;flex-wrap:wrap;gap:.4rem 1.5rem;
+  font-size:var(--fs-micro);font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--stone);
+}
+.hero__cue{margin-top:3.5rem;display:flex;align-items:center;gap:.85rem;font-size:var(--fs-micro);letter-spacing:.22em;text-transform:uppercase;color:var(--stone)}
+.hero__cue i{width:38px;height:1px;background:var(--rule);position:relative;overflow:hidden;display:block}
+.hero__cue i::after{content:"";position:absolute;inset:0;background:var(--accent);transform:translateX(-100%);animation:cue 2.8s var(--ease-io) infinite}
+@keyframes cue{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
+
+@media (min-width:900px){
+  .hero{justify-content:center;padding-block:9rem 4rem}
+  .hero__inner{justify-content:center;flex:0 1 auto}
+  .hero__eyebrow{margin-bottom:0}
+  .hero__head{margin-block:3rem 2.5rem}
+  .hero__lede{max-width:38ch}
+  .hero__cue{margin-top:5rem}
+  .mark{width:min(92vh,880px);top:50%;right:-14%;transform:translateY(calc(-50% + var(--drift,0px)))}
+}
+@media (min-width:1440px){.mark{right:-6%}}
+
+/* -----------------------------------------------------------------------------
+   8b. SMALL SCREENS
+   Everything here is spacing and type. No layout is restructured.
+   -------------------------------------------------------------------------- */
+@media (max-width:560px){
+  /* the hairline has no room left beside a 37-character eyebrow */
+  .hero__eyebrow .rule{display:none}
+}
+/* The eyebrow used to carry margin-bottom:auto, which shoved the headline to
+   the bottom of the viewport. Fixed gap instead, and the scroll cue takes the
+   auto — so the copy starts near the top and the cue still sits at the foot. */
+@media (max-width:899px){
+  .hero__eyebrow{margin-bottom:clamp(2rem,7vh,4rem)}
+  /* the foot takes the auto now, so the space below the button is composed
+     rather than simply empty */
+  .hero__foot{display:block;margin-top:auto;padding-top:clamp(2.5rem,7vh,4rem)}
+  .hero__cue{margin-top:1.6rem;padding-top:0}
+}
+@media (max-width:480px){
+  .hero{padding-block:5.5rem 2rem}
+  .hero__head{margin-block:0 1.5rem}
+  .hero__lede{margin-bottom:2rem}
+}
+@media (max-width:400px){
+  /* 9 columns across 272px leaves 28px each — the codes have to come down */
+  .shade__code{font-size:.5625rem;letter-spacing:.06em}
+}
+@media (max-width:360px){
+  /* last few pixels at SE width. Beyond this the copy is the constraint,
+     not the CSS: keep hero lines to 16 characters or fewer. */
+  .hero__head{letter-spacing:-.042em}
+}
+
+/* Landscape phones: 100svh is ~375px there, and the hero padding alone eats
+   168px of it. Release the viewport lock and let the menu scroll. */
+@media (orientation:landscape) and (max-height:520px){
+  .hero{min-height:auto;padding-block:6rem 3rem}
+  .hero__cue{display:none}
+  .menu__links{padding-block:1.25rem}
+  .menu__link{font-size:1.75rem;line-height:1.35}
+}
+
+/* -----------------------------------------------------------------------------
+   8c. FIELD MARKS
+   The same compass construction as the hero, seen through different windows.
+   Not new drawings — one drawing, cropped. Each sits behind its section at
+   roughly half the hero's weight and draws itself in on scroll.
+   -------------------------------------------------------------------------- */
+.figmark{
+  position:absolute;z-index:0;pointer-events:none;
+  color:var(--mark-color);opacity:calc(var(--mark-opacity) * .6);
+}
+.figmark svg{width:100%;height:auto;display:block}
+.figmark path{fill:none;stroke:currentColor;stroke-width:1;vector-effect:non-scaling-stroke;stroke-linecap:round}
+.figmark [data-accent]{stroke:var(--accent)}
+.dark .figmark{color:var(--paper);opacity:calc(var(--mark-opacity) * .5)}
+.dark .figmark [data-accent]{stroke:var(--accent-inv)}
+.js .figmark path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.9s var(--ease-out)}
+.js .figmark.is-in path{stroke-dashoffset:0}
+.figmark path:nth-child(2){transition-delay:.14s}
+.figmark path:nth-child(3){transition-delay:.28s}
+.figmark path:nth-child(n+4){transition-delay:.42s}
+
+.doctor,.approach-sec,.words-sec{position:relative;overflow:hidden}
+.doctor > .wrap,.approach-sec > .wrap,.words-sec > .wrap{position:relative;z-index:1}
+
+.figmark--doctor{width:min(96vw,520px);right:-42vw;bottom:-6%}
+.figmark--approach{width:min(96vw,520px);left:-46vw;bottom:-10%}
+.figmark--words{width:min(88vw,460px);right:-38vw;top:-8%}
+@media (min-width:900px){
+  .figmark--doctor{width:min(38vw,540px);right:-10%;bottom:-14%}
+  .figmark--approach{width:min(36vw,520px);left:-8%;bottom:-12%}
+  .figmark--words{width:min(32vw,460px);right:-6%;top:2%}
+}
+
+/* -----------------------------------------------------------------------------
+   9. SECTION MARKER
+   One device at every boundary: numeral, name, hairline drawing to the edge.
+   The sheet reference on a drawing. The number indexes the document, not the
+   content inside it — which is why the treatment list has none.
+   -------------------------------------------------------------------------- */
+.smark{display:flex;align-items:baseline;gap:1rem;margin-bottom:2.75rem}
+.smark__n{
+  font-family:var(--font-display);font-weight:320;font-variation-settings:'opsz' 60;
+  font-size:clamp(1.75rem,5vw,2.75rem);line-height:1;letter-spacing:-.02em;
+  color:var(--ink);opacity:.48;flex:none;
+}
+.smark__lab{flex:none}
+.smark__rule{flex:1;height:1px;background:var(--rule);transform-origin:left;align-self:center}
+.dark .smark__n{color:var(--paper);opacity:.5}
+/* .48 / .50 are not arbitrary: at .28 and .34 these numerals measured 1.86:1
+   and 2.86:1, below the 3:1 that WCAG requires even for large text. They are
+   aria-hidden but still visible, so the rule applies. Now 3.2:1 and 4.9:1. */
+.dark .smark__rule{background:var(--rule-inv)}
+@media (min-width:900px){.smark{gap:1.75rem;margin-bottom:3.5rem}}
+
+/* -----------------------------------------------------------------------------
+   10. LINE ICONS — 18–20px, 1px stroke, currentColor, one per line item
+   -------------------------------------------------------------------------- */
+.ico{flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+
+/* -----------------------------------------------------------------------------
+   11. PROOF BAND — a rule, not a section
+   -------------------------------------------------------------------------- */
+.proof{background:var(--paper-2);border-block:1px solid var(--rule)}
+.proof__grid{display:grid;grid-template-columns:1fr 1fr}
+.proof__cell{padding:1.9rem 0;border-bottom:1px solid var(--rule-soft)}
+.proof__cell:nth-child(odd){border-right:1px solid var(--rule-soft);padding-right:1.25rem}
+.proof__cell:nth-child(even){padding-left:1.25rem}
+.proof__cell:nth-last-child(-n+2){border-bottom:0}
+.proof__ico{color:var(--accent);margin-bottom:1.1rem}
+.proof__val{font-family:var(--font-display);font-weight:320;font-variation-settings:'opsz' 60;font-size:clamp(1.5rem,3.4vw + .6rem,2.5rem);line-height:1;letter-spacing:-.02em}
+.proof__lab{margin-top:.7rem;font-size:var(--fs-micro);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+@media (min-width:900px){
+  .proof__grid{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;grid-template-columns:none}
+  .proof__cell{padding:2.75rem 1.75rem;border-bottom:0;border-right:1px solid var(--rule-soft)}
+  .proof__cell:nth-child(odd){padding-right:1.75rem}
+  .proof__cell:nth-child(even){padding-left:1.75rem}
+  .proof__cell:first-child{padding-left:0}
+  .proof__cell:last-child{border-right:0;padding-right:0}
+}
+
+/* -----------------------------------------------------------------------------
+   12. THE DOCTOR — the only photograph on the site
+   Hard rectangle, no radius, no shadow, no floating badge. Hairline
+   registration marks sit outside the frame like crops on a print proof.
+   -------------------------------------------------------------------------- */
+.doctor{padding-block:var(--section)}
+.portrait{margin:0 0 2.25rem;position:relative}
+.portrait__plate{position:relative}
+.portrait__frame{
+  position:relative;aspect-ratio:var(--portrait-ratio);overflow:hidden;isolation:isolate;
+  background:var(--paper);transition:clip-path 1.05s var(--ease-out);
+}
+.js .portrait__frame{clip-path:inset(0 0 100% 0)}
+.js .portrait.is-in .portrait__frame{clip-path:inset(0 0 0 0)}
+.portrait__img{
+  width:100%;height:100%;object-fit:cover;object-position:var(--portrait-focal);
+  filter:none;
+  transition:transform 1.6s var(--ease-out);
+}
+.js .portrait__img{transform:scale(1.05)}
+.js .portrait.is-in .portrait__img{transform:scale(1)}
+.portrait__tint{position:absolute;inset:0;background:transparent;mix-blend-mode:screen;pointer-events:none}
+
+/* state before the clinic's headshot is dropped in — or if there is none.
+   Outlined initials inside a hairline frame, so it reads as a monogram plate
+   rather than a broken image. */
+.portrait__ph{position:absolute;inset:0;display:none;place-items:center;background:var(--ink)}
+.portrait__ph::before{content:"";position:absolute;inset:14px;border:1px solid rgba(247,244,237,.16)}
+.portrait__frame.is-missing{background:var(--ink)}
+.portrait__frame.is-missing .portrait__img,
+.portrait__frame.is-missing .portrait__tint{display:none}
+.portrait__frame.is-missing .portrait__ph{display:grid}
+.portrait__ph span{
+  font-family:var(--font-display);font-weight:300;font-variation-settings:'opsz' 144;
+  font-size:clamp(4rem,18vw,7rem);line-height:1;letter-spacing:.06em;
+  color:rgba(247,244,237,.22);
+}
+@supports (-webkit-text-stroke:1px currentColor){
+  .portrait__ph span{color:transparent;-webkit-text-stroke:1px rgba(247,244,237,.34)}
+}
+
+/* registration marks — shown at every width since the portrait stopped
+   bleeding off the right edge (it read as a botched crop on a phone) */
+.crop{position:absolute;width:16px;height:16px;pointer-events:none;opacity:0;display:block;transition:opacity var(--dur) var(--ease-out) .5s}
+.portrait.is-in .crop{opacity:.5}
+.map .crop{opacity:.42}
+.crop--tl{top:-10px;left:-10px;border-top:1px solid var(--stone);border-left:1px solid var(--stone)}
+.crop--tr{top:-10px;right:-10px;border-top:1px solid var(--stone);border-right:1px solid var(--stone)}
+.crop--bl{bottom:-10px;left:-10px;border-bottom:1px solid var(--stone);border-left:1px solid var(--stone)}
+.crop--br{bottom:-10px;right:-10px;border-bottom:1px solid var(--stone);border-right:1px solid var(--stone)}
+
+.portrait__cap{margin-top:1rem;font-size:var(--fs-micro);letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+.doctor__name{margin-bottom:1rem}
+.doctor__creds{font-size:var(--fs-micro);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);line-height:1.9;margin-bottom:2rem}
+.doctor__quote{
+  margin-block:2.75rem;padding-top:2.25rem;border-top:1px solid var(--rule);
+  font-family:var(--font-display);font-style:italic;font-weight:300;
+  font-variation-settings:'opsz' 72;font-size:var(--fs-m);line-height:1.22;
+  letter-spacing:-.014em;max-width:22ch;
+}
+.school{border-top:1px solid var(--rule);margin-top:2.5rem}
+.school__row{display:flex;align-items:center;gap:1rem;padding:1.05rem 0;border-bottom:1px solid var(--rule)}
+.school__ico{color:var(--stone)}
+.school__k{font-size:var(--fs-micro);font-weight:600;letter-spacing:.18em;text-transform:uppercase;flex:none}
+.school__v{font-size:var(--fs-micro);letter-spacing:.08em;color:var(--stone);text-align:right;margin-left:auto}
+@media (min-width:900px){
+  .doctor__grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(3rem,6vw,6rem);align-items:start}
+  .portrait{margin:0}
+  .portrait__cap{padding-right:0}
+  .doctor__quote{max-width:26ch}
+
+  /* If the clinic only has a landscape headshot, put `doctor--wide` on the
+     section: the plate goes full width above the copy instead of fighting a
+     narrow column. Set --portrait-ratio:3/2 with it. */
+  .doctor--wide .doctor__grid{grid-template-columns:1fr;gap:3.5rem}
+  .doctor--wide .portrait{max-width:none}
+  .doctor--wide .doctor__quote{max-width:34ch}
+}
+
+/* -----------------------------------------------------------------------------
+   13. TREATMENTS — an index, not cards
+   -------------------------------------------------------------------------- */
+.treatments__head{margin-bottom:3rem}
+.tx{border-top:1px solid var(--rule)}
+.tx__row{display:block;padding:1.9rem 0;border-bottom:1px solid var(--rule);position:relative}
+.tx__row::before{content:"";position:absolute;left:0;right:0;top:-1px;height:1px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform var(--dur) var(--ease-out)}
+.tx__row:hover::before,.tx__row:focus-visible::before{transform:scaleX(1)}
+.tx__name{display:flex;align-items:center;gap:.85rem;transition:transform var(--dur) var(--ease-out)}
+.tx__row:hover .tx__name{transform:translateX(6px)}
+.tx__ico{color:var(--stone);transition:color var(--dur-fast) linear}
+.tx__row:hover .tx__ico{color:var(--accent)}
+.tx__arrow{font-size:.9rem;color:var(--accent);opacity:0;transition:opacity var(--dur-fast) linear}
+.tx__row:hover .tx__arrow{opacity:1}
+.tx__note{margin-top:.7rem;color:var(--stone);max-width:46ch;padding-left:2.1rem;text-wrap:pretty}
+.tx__meta{margin-top:1rem;display:flex;gap:1.25rem;font-size:var(--fs-micro);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);padding-left:2.1rem}
+.tx__meta span:first-child{color:var(--ink)}
+@media (min-width:900px){
+  .tx__row{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,3fr);gap:3rem;align-items:baseline;padding:2.4rem 0}
+  .tx__meta{margin-top:0;justify-content:flex-end;text-align:right;padding-left:0}
+}
+
+/* -----------------------------------------------------------------------------
+   14. APPROACH — the dark section, with a margin spine that draws downward
+   -------------------------------------------------------------------------- */
+.approach__head{margin-bottom:3.25rem}
+.steps{position:relative;padding-left:1.75rem}
+.steps::before{
+  content:"";position:absolute;left:0;top:.5rem;bottom:1.5rem;width:1px;
+  background:var(--rule-inv);transform-origin:top;
+  transition:transform 1.4s var(--ease-out);
+}
+.js .steps::before{transform:scaleY(0)}
+.js .steps.is-in::before{transform:scaleY(1)}
+.step{padding:2.1rem 0;border-top:1px solid var(--rule-inv-soft);display:grid;gap:.85rem}
+.step:first-child{border-top:0;padding-top:0}
+.step__n{font-size:var(--fs-micro);font-weight:600;letter-spacing:.22em;color:var(--accent-inv)}
+.step__t{font-family:var(--font-display);font-weight:370;font-variation-settings:'opsz' 40;font-size:var(--fs-s);letter-spacing:-.01em;line-height:1.2}
+.step__p{color:rgba(247,244,237,.68);max-width:52ch;text-wrap:pretty}
+@media (min-width:760px){
+  .steps{padding-left:2.5rem}
+  .step{grid-template-columns:4rem minmax(0,15rem) minmax(0,1fr);gap:2rem;align-items:baseline}
+  .step__n{padding-top:.35rem}
+}
+
+/* signature element: a Vita shade ladder, drawn in CSS */
+.shade{margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid var(--rule-inv-soft)}
+.shade__lab{margin-bottom:1.5rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.shade__ladder{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:2px;align-items:end}
+.shade__col{
+  display:grid;gap:.6rem;justify-items:center;
+  background:none;border:0;padding:0;font:inherit;color:inherit;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.shade__chip{
+  width:100%;height:clamp(58px,17vw,104px);border:1px solid rgba(247,244,237,.14);
+  transform-origin:bottom;
+  transition:transform var(--dur-slow) var(--ease-out),opacity var(--dur) linear,
+             border-color var(--dur-fast) linear;
+}
+/* The stagger below sets transition-delay per column. That shorthand hits every
+   property, so without this the ninth chip's hover border lit up 0.4s late and
+   felt broken. Delay the reveal, never the hover. */
+.shade__col:hover .shade__chip,
+.shade__col:focus-visible .shade__chip{transition-delay:0s}
+.shade__col:hover .shade__chip{border-color:rgba(247,244,237,.55)}
+.shade__col:focus-visible{outline:none}
+.shade__col:focus-visible .shade__chip{outline:2px solid var(--accent-inv);outline-offset:2px}
+.js .shade__chip{transform:scaleY(.4);opacity:0}
+.js .shade.is-in .shade__chip{transform:scaleY(1);opacity:1}
+.shade__col:nth-child(1) .shade__chip{transition-delay:.00s,.00s,0s;background:#F8F6F2}
+.shade__col:nth-child(2) .shade__chip{transition-delay:.05s,.05s,0s;background:#F4F0EB}
+.shade__col:nth-child(3) .shade__chip{transition-delay:.10s,.10s,0s;background:#F0EBE4}
+.shade__col:nth-child(4) .shade__chip{transition-delay:.15s,.15s,0s;background:#ECE6DE}
+.shade__col:nth-child(5) .shade__chip{transition-delay:.20s,.20s,0s;background:#E8E1D7}
+.shade__col:nth-child(6) .shade__chip{transition-delay:.25s,.25s,0s;background:#E3DCD1}
+.shade__col:nth-child(7) .shade__chip{transition-delay:.30s,.30s,0s;background:#DFD7CB}
+.shade__col:nth-child(8) .shade__chip{transition-delay:.35s,.35s,0s;background:#DAD2C4}
+.shade__col:nth-child(9) .shade__chip{transition-delay:.40s,.40s,0s;background:#D6CDBE}
+.shade__code{font-size:.625rem;font-weight:600;letter-spacing:.1em;color:rgba(247,244,237,.66);transition:color var(--dur-fast) linear}
+.shade__col[aria-checked="true"] .shade__chip{border-color:var(--accent-inv);outline:1px solid var(--accent-inv);outline-offset:-3px}
+.shade__col[aria-checked="true"] .shade__code{color:var(--accent-inv)}
+.shade__note{margin-top:1.75rem;font-size:var(--fs-micro);letter-spacing:.14em;text-transform:uppercase;color:rgba(247,244,237,.62);max-width:44ch;line-height:1.8}
+.shade__hint{margin-top:.9rem;font-size:var(--fs-micro);letter-spacing:.14em;text-transform:uppercase;color:rgba(247,244,237,.4)}
+
+/* -----------------------------------------------------------------------------
+   15. PATIENT WORDS — stacked, no carousel, no cards, no stars.
+   Each quote sits against an outlined mark drawn in the same 1px weight as
+   the hero construction.
+   -------------------------------------------------------------------------- */
+.words__head{margin-bottom:3rem}
+.word{padding-block:2.75rem;border-top:1px solid var(--rule);position:relative;overflow:hidden}
+.word:last-child{border-bottom:1px solid var(--rule)}
+.word__glyph{
+  position:absolute;top:.55rem;left:-.05em;z-index:0;
+  font-family:var(--font-display);font-weight:300;font-variation-settings:'opsz' 144;
+  font-size:clamp(7rem,20vw,12rem);line-height:.8;
+  color:rgba(27,23,19,.06);pointer-events:none;user-select:none;
+}
+@supports (-webkit-text-stroke:1px currentColor){
+  .word__glyph{color:transparent;-webkit-text-stroke:1px var(--rule)}
+}
+.word__q{
+  position:relative;z-index:1;
+  font-family:var(--font-display);font-style:italic;font-weight:300;
+  font-weight:340;font-variation-settings:'opsz' 40;
+  /* Отзывы вставляются дословно и бывают длинными — резать чужие слова
+     нельзя. Размер и мера подстраиваются под текст, а не наоборот:
+     шрифт мельче на длинных цитатах, мера шире вдвое. 230 слов теперь
+     ложатся в ~9 строк вместо 21. */
+  font-size:clamp(1.0625rem,1.1vw + .75rem,1.375rem);line-height:1.45;
+  letter-spacing:-.005em;max-width:62ch;text-wrap:pretty;
+}
+.word__by{position:relative;z-index:1;margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;font-size:var(--fs-micro);letter-spacing:.18em;text-transform:uppercase}
+.word__by b{font-weight:600}
+.word__by span{color:var(--stone)}
+@media (min-width:900px){
+  .word{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,3fr);gap:3rem;align-items:start;padding-block:3.25rem}
+  .word__by{margin-top:.4rem;flex-direction:column;gap:.45rem;text-align:right;align-items:flex-end}
+}
+
+/* -----------------------------------------------------------------------------
+   16. STANDARDS — the permanent trust block. Formerly two figures sharing
+   each Patient Words slot; now its own section so it never depends on how
+   many real reviews a clinic has. Three parallel statements, typeset away
+   from Patient Words on purpose: no glyph, no bold byline, so a reader
+   never mistakes a fact for a testimony. A rule grid, not cards.
+   -------------------------------------------------------------------------- */
+.trust__head{max-width:22ch}
+.trust-grid{
+  display:grid;margin-top:clamp(2.5rem,5vw,3.75rem);
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+}
+.trust{padding-block:2.25rem}
+.trust:not(:last-child){border-bottom:1px solid var(--rule)}
+.trust__t{
+  font-family:var(--font-display);font-weight:370;font-variation-settings:'opsz' 40;
+  font-size:var(--fs-s);letter-spacing:-.01em;line-height:1.2;margin-bottom:.85rem;
+}
+.trust__p{color:var(--stone);max-width:36ch;text-wrap:pretty}
+@media (min-width:900px){
+  .trust-grid{grid-template-columns:repeat(3,1fr)}
+  .trust{padding:3rem 2.5rem}
+  .trust:not(:last-child){border-bottom:0;border-right:1px solid var(--rule)}
+  .trust:first-child{padding-left:0}
+  .trust:last-child{padding-right:0}
+}
+
+/* -----------------------------------------------------------------------------
+   17. BOOKING
+   -------------------------------------------------------------------------- */
+.book__head{margin-bottom:3rem}
+.book__grid{display:grid;gap:3.5rem}
+.info{border-top:1px solid var(--rule-inv)}
+.info__row{display:grid;grid-template-columns:auto 1fr;gap:.4rem 1rem;padding:1.15rem 0;border-bottom:1px solid var(--rule-inv);align-items:start}
+.info__ico{color:var(--accent-inv);margin-top:.2rem;grid-row:span 2}
+.info__k{font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-inv)}
+.info__v{color:rgba(247,244,237,.82);line-height:1.55}
+.info__v a{border-bottom:1px solid var(--rule-inv);padding-bottom:1px;transition:border-color var(--dur-fast) linear}
+.info__v a:hover{border-bottom-color:var(--accent-inv)}
+
+/* The form sits on a plate of heavier stock: one tonal step off the section,
+   its own denser grain, a hairline border and registration marks at the
+   corners. This is the tactile effect without a gradient glow or a blurred
+   glass panel — both of which are the language the audit criticises. */
+.plate{position:relative;padding:clamp(1.6rem,5vw,2.9rem)}
+.plate::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:rgba(247,244,237,.035);
+  border:1px solid var(--rule-inv);
+}
+.plate::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.06;
+}
+@media (min-width: 900px) {
+  .plate::after {
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='stock'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.05' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23stock)'/%3E%3C/svg%3E");
+  }
+}
+.plate > *{position:relative;z-index:1}
+.plate .crop{display:block;opacity:.34;z-index:2}
+.plate .crop--tl,.plate .crop--tr,.plate .crop--bl,.plate .crop--br{border-color:var(--paper)}
+
+.form{display:grid;gap:1.75rem}
+.row2{display:grid;gap:1.75rem}
+.field{display:grid;gap:.6rem}
+.field label{font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:rgba(247,244,237,.66)}
+.field input,.field textarea{
+  background:transparent;border:0;border-bottom:1px solid var(--rule-inv);
+  padding:.65rem 0;font-size:1.0625rem;color:var(--paper);border-radius:0;
+  -webkit-appearance:none;appearance:none;transition:border-color var(--dur-fast) linear;
+}
+.field textarea{resize:vertical;min-height:5.5rem;line-height:1.55}
+/* -----------------------------------------------------------------------------
+   CUSTOM LISTBOX
+   A native <option> popup is drawn by the OS: it cannot be styled and the site
+   cursor cannot survive over it. Same limitation as a scrollbar thumb. Built
+   from real elements instead, so both work.
+   -------------------------------------------------------------------------- */
+.sel__label{font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:rgba(247,244,237,.66)}
+.sel{position:relative}
+.sel__btn{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  background:transparent;border:0;border-bottom:1px solid var(--rule-inv);
+  padding:.65rem 0;font-size:1.0625rem;line-height:1.4;color:var(--paper);text-align:left;
+  transition:border-color var(--dur-fast) linear;
+}
+.sel__btn:focus-visible{outline:none;border-bottom-color:var(--accent-inv)}
+.sel[data-open="true"] .sel__btn{border-bottom-color:var(--accent-inv)}
+.field[data-invalid="true"] .sel__btn{border-bottom-color:var(--accent-inv)}
+.sel__value[data-empty="true"]{color:rgba(247,244,237,.3)}
+.sel__chev{flex:none;color:var(--accent-inv);transition:transform var(--dur) var(--ease-out)}
+.sel[data-open="true"] .sel__chev{transform:rotate(180deg)}
+
+.sel__list{
+  position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:20;
+  margin:0;padding:0;list-style:none;
+  background:var(--ink);border:1px solid var(--accent-inv);
+  max-height:min(17rem,45vh);overflow-y:auto;overscroll-behavior:contain;
+  opacity:0;transform:translateY(-6px);
+  transition:opacity .18s var(--ease-out),transform .18s var(--ease-out);
+}
+.sel__list[hidden]{display:none}
+.sel[data-open="true"] .sel__list{opacity:1;transform:none}
+
+.sel__opt{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.95rem 1.1rem;font-size:.9375rem;line-height:1.4;
+  color:rgba(247,244,237,.78);cursor:pointer;
+  border-bottom:1px solid var(--rule-inv-soft);
+  transition:background var(--dur-fast) linear,color var(--dur-fast) linear;
+}
+.sel__opt:last-child{border-bottom:0}
+.sel__opt::before{
+  content:"";flex:none;width:7px;height:7px;
+  border:1px solid var(--rule-inv);
+  transition:background var(--dur-fast) linear,border-color var(--dur-fast) linear;
+}
+.sel__opt.is-active{background:rgba(247,244,237,.055);color:var(--paper)}
+.sel__opt.is-active::before{border-color:var(--accent-inv)}
+.sel__opt[aria-selected="true"]{color:var(--paper)}
+.sel__opt[aria-selected="true"]::before{background:var(--accent-inv);border-color:var(--accent-inv)}
+
+/* the list keeps its own scrollbar, tuned to the dark ground */
+.sel__list::-webkit-scrollbar{width:8px}
+.sel__list::-webkit-scrollbar-track{background:var(--ink);border-left:1px solid var(--rule-inv-soft)}
+.sel__list::-webkit-scrollbar-thumb{background:var(--accent-inv);border:3px solid var(--ink)}
+.sel__list::-webkit-scrollbar-button{display:none}
+@media (prefers-reduced-motion:reduce){
+  .sel__list{opacity:1;transform:none}
+  .sel__chev{transition:none}
+}
+.field input:focus,.field textarea:focus{outline:none;border-bottom-color:var(--accent-inv)}
+.field input::placeholder,.field textarea::placeholder{color:rgba(247,244,237,.3)}
+.field[data-invalid="true"] input,.field[data-invalid="true"] textarea{border-bottom-color:var(--accent-inv)}
+.field__err{font-size:var(--fs-micro);letter-spacing:.1em;color:var(--accent-inv);display:none}
+.field[data-invalid="true"] .field__err{display:block}
+.form__foot{display:grid;gap:1.25rem}
+.form__note{font-size:var(--fs-micro);letter-spacing:.1em;color:rgba(247,244,237,.62);line-height:1.8;max-width:46ch}
+.sent{display:none;border-top:1px solid var(--rule-inv);padding-top:2.5rem}
+.sent[data-on="true"]{display:block}
+.form[data-off="true"]{display:none}
+
+/* -----------------------------------------------------------------------------
+   TOASTS
+   Square, hairline border, no shadow, no blur. Errors use the accent rather
+   than a generic alert red, which would be the only off-palette colour on the
+   site. The inline field errors stay: a toast alone is easy to miss, and it
+   does not tell you which field is wrong.
+   -------------------------------------------------------------------------- */
+.toasts{
+  position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);
+  z-index:120;display:flex;flex-direction:column-reverse;gap:.5rem;
+  width:calc(100% - 2rem);max-width:26rem;pointer-events:none;
+}
+.toast{
+  display:flex;align-items:flex-start;gap:.75rem;
+  padding:.9rem 1.1rem;background:var(--paper);border:1px solid var(--ink);
+  color:var(--ink);font-size:.8125rem;line-height:1.45;letter-spacing:.01em;
+  opacity:0;transform:translateY(10px);pointer-events:auto;
+  transition:opacity var(--dur) var(--ease-out),transform var(--dur) var(--ease-out);
+}
+.toast.is-in{opacity:1;transform:none}
+.toast--error{border-color:var(--accent)}
+.toast--error .toast__ico{color:var(--accent)}
+.toast__ico{flex:none;margin-top:.12rem;color:var(--ink)}
+.toast__x{
+  flex:none;margin:-.9rem -.7rem -.9rem auto;width:44px;height:44px;
+  display:grid;place-items:center;line-height:1;font-size:1rem;color:var(--stone);
+}
+.toast__x:hover{color:var(--ink)}
+@media (min-width:760px){
+  .toasts{left:auto;right:var(--gutter);bottom:2rem;transform:none;width:auto}
+}
+@media (min-width:640px){.row2{grid-template-columns:1fr 1fr}}
+@media (min-width:900px){.book__grid{grid-template-columns:minmax(0,4fr) minmax(0,6fr);gap:clamp(3rem,7vw,7rem)}}
+
+/* -----------------------------------------------------------------------------
+   18. LOCATION — address, rating, phones, map, reviews
+   Map sits above the copy on a phone (DOM order) and moves to the right column
+   at 900px via grid `order`. No new colours: the scrim is ink-deep mixed with
+   transparent, the stars are currentColor.
+   -------------------------------------------------------------------------- */
+.loc__head{margin-bottom:3rem}
+.loc__grid{display:grid;gap:2.5rem}
+.loc__addr{font-style:normal;margin-bottom:2.25rem}
+
+.rating{display:flex;align-items:center;gap:1.1rem;padding-block:1.4rem;border-block:1px solid var(--rule)}
+.rating__score{
+  font-family:var(--font-display);font-weight:320;font-variation-settings:'opsz' 72;
+  font-size:clamp(2.25rem,8vw,2.75rem);line-height:1;letter-spacing:-.02em;
+}
+.rating__right{display:grid;gap:.45rem}
+.rating__src{font-size:var(--fs-micro);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+
+.stars{display:inline-flex;gap:.2rem;color:var(--accent);vertical-align:middle}
+.star{fill:none;stroke:currentColor;stroke-width:1;stroke-linejoin:round;display:block}
+.star.is-on{fill:currentColor}
+.dark .stars{color:var(--accent-inv)}
+
+.phones{margin-top:.5rem}
+.phone{
+  display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  min-height:52px;padding-block:.9rem;border-bottom:1px solid var(--rule);
+  transition:color var(--dur-fast) linear;
+}
+.phone__k{font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--stone);transition:color var(--dur-fast) linear}
+.phone__v{font-size:1.0625rem;letter-spacing:.02em}
+.phone:hover{color:var(--accent)}
+.phone:hover .phone__k{color:var(--accent)}
+.loc__btn{margin-top:2rem}
+
+/* --- map ---------------------------------------------------------------- */
+.map{position:relative}
+/* Framed like a print: a paper mat, a hairline on the mount and a second
+   hairline on the plate itself. Two rules and a tonal step — no shadow. */
+.map__frame{position:relative;padding:10px;background:var(--paper-2);border:1px solid var(--rule)}
+.map__plate{position:relative;aspect-ratio:4/3;overflow:hidden;border:1px solid var(--rule);background:var(--paper-2)}
+.map__iframe{width:100%;height:100%;border:0;display:block;filter:var(--map-filter)}
+
+/* The shield stops the map swallowing a scroll gesture on touch. One tap arms
+   the map; scrolling it out of view disarms it again. Never shown to a mouse. */
+.map__shield{
+  position:absolute;inset:0;z-index:2;width:100%;height:100%;
+  display:flex;align-items:flex-end;justify-content:center;
+  border:0;padding:0 0 1rem;background:transparent;
+  -webkit-tap-highlight-color:transparent;
+  transition:opacity var(--dur-fast) linear,visibility 0s linear 0s;
+}
+.map__shield-label{
+  font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--paper);background:var(--ink);border:1px solid var(--paper);
+  padding:.85rem 1.25rem;
+}
+/* armed = the map is live; the shield fades out rather than vanishing, and
+   comes back when the map scrolls out of view */
+.map[data-armed="true"] .map__shield{
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity var(--dur-fast) linear,visibility 0s linear var(--dur-fast);
+}
+@media (hover:hover) and (pointer:fine){.map__shield{display:none}}
+
+/* --- reviews — same treatment as Patient Words, minus the glyph ---------- */
+.revs{margin-top:clamp(3rem,8vw,5rem)}
+.revs .word__by{align-items:baseline}
+
+@media (max-width:899px){
+  .loc__map{order:-1}
+}
+@media (min-width:900px){
+  .loc__grid{grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(3rem,6vw,5rem);align-items:start}
+}
+
+/* -----------------------------------------------------------------------------
+   19. FOOTER — the hero construction returns, cropped and near-silent
+   -------------------------------------------------------------------------- */
+.foot{padding-block:3.5rem;border-top:1px solid var(--rule);position:relative;overflow:hidden}
+.foot__mark{
+  position:absolute;right:-12%;bottom:-42%;width:min(58vw,520px);z-index:0;
+  color:var(--stone);opacity:.13;pointer-events:none;
+}
+.foot__mark svg{width:100%;height:auto;display:block}
+.foot__mark path{fill:none;stroke:currentColor;stroke-width:1;vector-effect:non-scaling-stroke}
+.foot > .wrap{position:relative;z-index:1}
+.foot__grid{display:grid;gap:2.5rem}
+.foot__brand .brand__name{font-size:1.25rem}
+.foot__col h3{font-size:var(--fs-micro);font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+.foot__col p,.foot__col a{color:var(--stone);line-height:1.8;display:block}
+.foot__col a:hover{color:var(--ink)}
+.foot__legal{
+  margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--rule-soft);
+  display:flex;flex-wrap:wrap;gap:.6rem 1.5rem;justify-content:space-between;
+  font-size:var(--fs-micro);letter-spacing:.12em;text-transform:uppercase;color:var(--stone);
+}
+.foot__credit{color:var(--stone);border-bottom:1px solid transparent;padding-bottom:1px;transition:color var(--dur-fast) linear,border-color var(--dur-fast) linear}
+.foot__credit:hover{color:var(--accent);border-bottom-color:var(--accent)}
+@media (min-width:760px){.foot__grid{grid-template-columns:2fr 1fr 1fr}}
+
+/* -----------------------------------------------------------------------------
+   20. SECTION INDEX — desktop only
+   -------------------------------------------------------------------------- */
+.index{
+  position:fixed;left:var(--gutter);bottom:2rem;z-index:40;display:none;
+  font-size:var(--fs-micro);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--stone);pointer-events:none;
+}
+.index b{font-weight:600;color:var(--ink)}
+.dark-active .index{color:rgba(247,244,237,.55)}
+.dark-active .index b{color:var(--paper)}
+@media (min-width:1180px){.index{display:block}}
+
+/* -----------------------------------------------------------------------------
+   19b. TOUCH TAP TARGETS
+   Scoped to coarse pointers so the approved desktop composition is untouched.
+   Padding is cancelled with matching negative margins: the hit area grows,
+   the visual rhythm does not move.
+   -------------------------------------------------------------------------- */
+@media (pointer:coarse){
+  .menu__foot a{display:flex;align-items:center;min-height:44px}
+  .menu__foot{gap:0}
+  .info__v a{display:inline-block;padding-block:.55rem;margin-block:-.55rem}
+  .foot__col a{display:flex;align-items:center;min-height:44px;line-height:1.4}
+  .foot__credit{display:inline-flex;align-items:center;min-height:44px}
+  .nav__link{padding-block:.85rem}
+  /* the shade chips are 28px wide at 320px — 28x64 clears WCAG 2.5.8 AA (24px)
+     but not the 44px HIG figure. Non-essential control, keyboard path intact. */
+  .shade__col{padding-block:.35rem}
+  a,button{-webkit-tap-highlight-color:transparent}
+}
+
+/* -----------------------------------------------------------------------------
+   21. MOTION — line masks, fades, hairline draws. Two curves. Nothing else.
+   -------------------------------------------------------------------------- */
+.js [data-reveal]{opacity:0;transform:translateY(14px);transition:opacity var(--dur) var(--ease-out),transform var(--dur) var(--ease-out)}
+.js [data-reveal].is-in{opacity:1;transform:none}
+.js [data-reveal="lines"]{opacity:1;transform:none}
+.ln{display:block;overflow:hidden;padding-bottom:.14em;margin-bottom:-.14em}
+.ln__i{display:block;transition:transform var(--dur-slow) var(--ease-out)}
+.js [data-reveal="lines"] .ln__i{transform:translateY(112%)}
+.js [data-reveal="lines"].is-in .ln__i{transform:none}
+
+/* ---------------------------------------------------------------------------
+   ABOVE THE FOLD — CSS only, no JavaScript in the path.
+
+   Everything below the fold can wait for app.js; the hero cannot. While it was
+   on [data-reveal] the largest text on the page sat at opacity:0 until app.js
+   had downloaded, parsed, run, and had an IntersectionObserver fire — which on
+   a throttled 4G phone is the entire LCP figure. These keyframes start at first
+   paint instead, so LCP is bound by the document and nothing else.
+
+   Durations are deliberately short. Any entrance animation on the LCP element
+   pushes LCP out by roughly its own length, so the hero is fully in under a
+   second while everything further down keeps the slower, calmer timing.
+   --------------------------------------------------------------------------- */
+.js [data-hero]{animation:hero-in .6s var(--ease-out) both}
+.js [data-hero="rule"]{animation:hero-rule .7s var(--ease-out) both}
+.js [data-hero="lines"]{animation:none;opacity:1}
+.js [data-hero="lines"] .ln__i{animation:hero-line .7s var(--ease-out) both}
+.js [data-hero="lines"] .ln:nth-child(2) .ln__i{animation-delay:.07s}
+.js [data-hero="lines"] .ln:nth-child(3) .ln__i{animation-delay:.14s}
+.js [data-hero][data-delay="1"]{animation-delay:.05s}
+.js [data-hero][data-delay="2"]{animation-delay:.10s}
+.js [data-hero][data-delay="3"]{animation-delay:.16s}
+.js [data-hero][data-delay="4"]{animation-delay:.22s}
+@keyframes hero-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes hero-rule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes hero-line{from{transform:translateY(112%)}to{transform:none}}
+.js [data-reveal="rule"]{opacity:1;transform:scaleX(0);transform-origin:left;transition:transform var(--dur-slow) var(--ease-out)}
+.js [data-reveal="rule"].is-in{transform:scaleX(1)}
+/* specificity has to beat `.js [data-reveal]`, whose transition shorthand
+   would otherwise reset the delay to 0 */
+.js [data-reveal][data-delay="1"]{transition-delay:.08s}
+.js [data-reveal][data-delay="2"]{transition-delay:.16s}
+.js [data-reveal][data-delay="3"]{transition-delay:.24s}
+.js [data-reveal][data-delay="4"]{transition-delay:.32s}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .js [data-reveal]{opacity:1;transform:none}
+  .ln__i{transform:none}
+  .js [data-hero],.js [data-hero="rule"],.js [data-hero="lines"] .ln__i{animation:none}
+  .js [data-reveal="rule"]{transform:scaleX(1)}
+  .js .portrait__frame{clip-path:none}
+  .js .portrait__img{transform:none}
+  .js .shade__chip{transform:none;opacity:1}
+  .js .steps::before{transform:scaleY(1)}
+  .js .mark [data-draw]{stroke-dasharray:none;stroke-dashoffset:0}
+  .js .figmark path{stroke-dasharray:none;stroke-dashoffset:0}
+  .sel__list{opacity:1;transform:none}
+  .mark{transform:none}
+  .crop{opacity:.5}
+  .hero__cue i::after{animation:none;transform:none;opacity:.4}
+}
+
+
+/* --- HOTFIX: UI Polish --- */
+#trust { padding-top: clamp(1.5rem, 3vw, 3rem); }
+@media (max-width: 899px) {
+  .hero .mark { opacity: 0.12 !important; }
+}
+</style>
+
+<script>
+/* Sets `.js` so the reveal styles can hide content before it animates in.
+   Two failsafes, because `.js [data-reveal]{opacity:0}` would otherwise leave
+   a blank page forever if app.js 404s, times out, or throws:
+     1. if app.js has not signalled `js-ready` in 2.5s, drop `.js` entirely
+     2. `fonts-ready` gates the line drawings, which are the CLS culprits    */
+(function(d){
+  var h = d.documentElement;
+  h.className += ' js';
+  setTimeout(function(){ if (!h.classList.contains('js-ready')) h.classList.remove('js'); }, 2500);
+
+  /* Called from the font stylesheet's onload. It has to run *after* the
+     @font-face rules exist — asking document.fonts.ready before they are
+     parsed resolves immediately and defeats the whole point. */
+  window.__fontsReady = function(){
+    if (d.fonts && d.fonts.ready) d.fonts.ready.then(function(){ h.classList.add('fonts-ready'); });
+    else h.classList.add('fonts-ready');
+  };
+  setTimeout(function(){ h.classList.add('fonts-ready'); }, 2200);
+})(document);
+</script>
+<script src="app.js" defer></script>
+
+<noscript><style>
+  [data-reveal]{opacity:1!important;transform:none!important}
+  .ln__i{transform:none!important}
+  .portrait__frame{clip-path:none!important}
+  .portrait__img{transform:none!important}
+  .shade__chip{transform:none!important;opacity:1!important}
+  .steps::before{transform:scaleY(1)!important}
+  .crop{opacity:.5!important}
+  .mark [data-draw],.figmark path{stroke-dasharray:none!important;stroke-dashoffset:0!important}
+</style></noscript>
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- cursor (desktop, fine pointer only — created here, activated from app.js) -->
+<span id="cur-ring" aria-hidden="true"></span>
+<span id="cur-dot" aria-hidden="true"></span>
+
+<!-- toast container -->
+<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ============================= NAV ============================= -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Dr. Basil Hammoudeh, DMD, home">
+    <span class="brand__name" data-c="brand.name">Dr. Basil Hammoudeh, DMD</span>
+    <span class="brand__tag" data-c="brand.tagline">Cosmetic Dentistry · Sherman Oaks</span>
+  </a>
+
+  <nav class="nav__links" aria-label="Primary">
+    <a class="nav__link" href="#doctor">The Dentist</a>
+    <a class="nav__link" href="#approach">Approach</a>
+    <a class="nav__link" href="#location">Location</a>
+    <a class="nav__link" href="#book">Contact</a>
+  </nav>
+
+  <div class="nav__right">
+    <a class="btn btn--sm nav__cta" href="#book" data-magnetic>
+      <span data-c="hero.cta">Schedule a consultation</span>
+    </a>
+    <button class="menu-btn" id="menu-open" aria-expanded="false" aria-controls="menu">Menu</button>
+  </div>
+
+  <span class="nav__progress" id="progress" aria-hidden="true"></span>
+</header>
+
+<!-- ============================= MENU ============================= -->
+<div class="menu" id="menu" data-open="false" aria-hidden="true">
+  <div class="menu__top">
+    <span class="brand">
+      <span class="brand__name" data-c="brand.name">Dr. Basil Hammoudeh, DMD</span>
+      <span class="brand__tag" data-c="brand.tagline">Cosmetic Dentistry · Sherman Oaks</span>
+    </span>
+    <button class="menu-btn" id="menu-close">Close</button>
+  </div>
+
+  <nav class="menu__links" aria-label="Mobile">
+    <a class="menu__link" href="#doctor">The Dentist</a>
+    <a class="menu__link" href="#approach">Approach</a>
+    <a class="menu__link" href="#location">Location</a>
+    <a class="menu__link" href="#book">Contact</a>
+  </nav>
+
+  <div class="menu__foot">
+    <a href="tel:+18187829500" data-c="book.phone">(818) 782-9500</a>
+    <a href="mailto:info@greendental.com" data-c="book.email">info@greendental.com</a>
+  </div>
+</div>
+
+<main id="main">
+
+<!-- ============================= HERO ============================= -->
+<section class="hero" id="top">
+
+  <!-- The one mark. A compass construction: overlapping arcs on a shared
+       baseline, golden division ticks, vesica crosshairs, one accent curve.
+       Draws itself over 2.4s on load, then drifts slowly as the hero leaves. -->
+  <div class="mark" id="mark" aria-hidden="true">
+    <svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+      <path data-draw pathLength="1" d="M60,400 a340,340 0 1,0 680,0 a340,340 0 1,0 -680,0"/>
+      <path data-draw pathLength="1" d="M40,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M280,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M252,400 a148,148 0 1,0 296,0 a148,148 0 1,0 -296,0"/>
+      <path data-draw pathLength="1" d="M60,400 L740,400"/>
+      <path data-draw pathLength="1" d="M400,40 L400,760"/>
+      <path data-draw pathLength="1" d="M160,392 L160,408 M252,392 L252,408 M308,392 L308,408 M492,392 L492,408 M548,392 L548,408 M640,392 L640,408"/>
+      <path data-draw pathLength="1" d="M386,192 L414,192 M400,178 L400,206 M386,608 L414,608 M400,594 L400,622"/>
+      <path data-draw data-accent pathLength="1" d="M140,500 Q400,626 660,500"/>
+    </svg>
+  </div>
+
+  <div class="wrap hero__inner">
+    <p class="hero__eyebrow eyebrow" data-hero>
+      <span data-c="hero.eyebrow">Sherman Oaks</span>
+      <span class="rule" data-hero="rule" data-delay="1" aria-hidden="true"></span>
+    </p>
+
+    <!-- Pre-split in the markup, not by JavaScript. This is the whole LCP fix:
+         the largest text on the page no longer waits for app.js to download,
+         parse and run before it is allowed to become visible. -->
+    <h1 class="hero__head d-xl" data-hero="lines">
+      <span class="ln"><span class="ln__i"><span data-c="hero.line1">Over fifty years of</span></span></span>
+      <span class="ln"><span class="ln__i"><span data-c="hero.line2">combined expertise in</span></span></span>
+      <span class="ln"><span class="ln__i"><span data-c="hero.line3"><em>dentistry</em></span></span></span>
+    </h1>
+
+    <p class="hero__lede lede" data-hero data-delay="2" data-c="hero.lede">We are equipped to meet all your cosmetic, restorative, implantology, orthodontics, periodontics, endodontics, and oral surgery needs.</p>
+
+    <div data-hero data-delay="3">
+      <a class="btn" href="#book" data-magnetic>
+        <span>Schedule a consultation</span>
+        <span class="btn__arrow" aria-hidden="true">&#8594;</span>
+      </a>
+    </div>
+
+    <!-- phones only: a hairline and two facts, so the space under the button
+         reads as composed rather than left over -->
+    <div class="hero__foot">
+      <span class="rule" data-hero="rule" data-delay="4" aria-hidden="true"></span>
+      <p class="hero__meta" data-hero data-delay="4">
+        <span data-c="hero.meta1">Consultations by appointment</span>
+        <span data-c="hero.meta2">Mon 9:00-18:00 · Tue 10:00-19:00 · Wed-Thu 9:00-18:00 · Fri 8:00-17:00</span>
+      </p>
+    </div>
+
+    <p class="hero__cue" data-hero data-delay="4" aria-hidden="true">
+      <span>Scroll</span><i></i>
+    </p>
+  </div>
+</section>
+
+<!-- ============================= PROOF BAND ============================= -->
+<section class="proof" aria-label="Credentials">
+  <div class="wrap">
+    <div class="proof__grid">
+
+      <div class="proof__cell" data-reveal>
+        <svg class="ico proof__ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3 14.5 Q10 8.5 17 14.5"/><path d="M3 11 Q10 5 17 11"/><path d="M3 7.5 Q10 1.5 17 7.5"/>
+        </svg>
+        <p class="proof__val" data-c="proof.1.value">50+</p>
+        <p class="proof__lab" data-c="proof.1.label">Years combined expertise</p>
+      </div>
+
+      <div class="proof__cell" data-reveal data-delay="1">
+        <svg class="ico proof__ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="10" r="7"/><path d="M10 5.5 V10 L13.2 12"/>
+        </svg>
+        <p class="proof__val" data-c="proof.2.value">50</p>
+        <p class="proof__lab" data-c="proof.2.label">Years Expertise</p>
+      </div>
+
+      <div class="proof__cell" data-reveal data-delay="2">
+        <svg class="ico proof__ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="7.5" r="5.2"/><path d="M6.6 12.1 V18 L10 16.2 L13.4 18 V12.1"/>
+        </svg>
+        <p class="proof__val" data-c="proof.3.value">125</p>
+        <p class="proof__lab" data-c="proof.3.label">Linked Conditions</p>
+      </div>
+
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================= 01 · THE DOCTOR ============================= -->
+<section class="doctor" id="doctor" aria-labelledby="doctor-h">
+  <!-- the hero construction again, cropped to this window -->
+  <div class="figmark figmark--doctor" data-figmark aria-hidden="true">
+    <svg viewBox="320 220 480 480" xmlns="http://www.w3.org/2000/svg">
+      <path data-draw pathLength="1" d="M60,400 a340,340 0 1,0 680,0 a340,340 0 1,0 -680,0"/>
+      <path data-draw pathLength="1" d="M40,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M280,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M252,400 a148,148 0 1,0 296,0 a148,148 0 1,0 -296,0"/>
+      <path data-draw pathLength="1" d="M60,400 L740,400"/>
+      <path data-draw pathLength="1" d="M400,40 L400,760"/>
+      <path data-draw pathLength="1" d="M386,192 L414,192 M400,178 L400,206 M386,608 L414,608 M400,594 L400,622"/>
+      <path data-draw data-accent pathLength="1" d="M140,500 Q400,626 660,500"/>
+    </svg>
+  </div>
+
+  <div class="wrap">
+
+    <div class="smark">
+      <span class="smark__n" aria-hidden="true">01</span>
+      <span class="smark__lab eyebrow">The Dentist</span>
+      <span class="smark__rule" data-reveal="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="doctor__grid">
+
+      <!-- THE ONE PHOTOGRAPH -->
+      <figure class="portrait" data-portrait data-reveal-crop>
+        <div class="portrait__plate">
+          <div class="portrait__frame">
+            <!-- Drop the clinic's existing headshot in as portrait.jpg. -->
+            <img class="portrait__img" src="portrait.jpg" width="1000" height="1250"
+                 loading="lazy" decoding="async"
+                 alt="Dr. Basil Hammoudeh, DMD"
+                 onerror="this.closest('.portrait__frame').classList.add('is-missing')">
+            <span class="portrait__tint" aria-hidden="true"></span>
+            <span class="portrait__ph" aria-hidden="true"><span>.B</span></span>
+          </div>
+          <span class="crop crop--tl" aria-hidden="true"></span>
+          <span class="crop crop--tr" aria-hidden="true"></span>
+          <span class="crop crop--bl" aria-hidden="true"></span>
+          <span class="crop crop--br" aria-hidden="true"></span>
+        </div>
+        <figcaption class="portrait__cap" data-reveal data-c="doctor.caption">Dr. Basil Hammoudeh, DMD · Sherman Oaks</figcaption>
+      </figure>
+
+      <div>
+        <h2 class="doctor__name d-l" id="doctor-h" data-reveal="lines">
+          <span data-c="doctor.name">Dr. Basil Hammoudeh, DMD</span>
+        </h2>
+
+
+        <p class="body" data-reveal data-delay="2" data-c="doctor.bio1">Our experience is extensive, with over 50+ Years combined expertise. We offer a variety of services, including Invisalign® clear aligners, Lumineers® smile makeovers, i-CAT® 3D imaging, professional fluoride treatments, and braces for adults.</p>
+
+        <p class="body" data-reveal data-delay="3" data-c="doctor.bio2">The American Dental Association has linked 125 medical conditions that are influenced by dental care. We are equipped to meet all your dental needs, providing everything from oral surgery to restorative dentistry.</p>
+
+        <blockquote class="doctor__quote" data-reveal data-delay="2" data-c="doctor.quote">With over 50 years of combined expertise in all areas of dentistry—cosmetic, restorative, implantology, orthodontics, periodontics, endodontics, and oral surgery—we are equipped to meet all your dental needs.</blockquote>
+
+        <div class="school">
+          <div class="school__row" data-reveal>
+            <svg class="ico school__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M9 5 V14.5"/><path d="M9 5 Q5.5 3.2 2.5 4 V13 Q5.5 12.2 9 14.5 Q12.5 12.2 15.5 13 V4 Q12.5 3.2 9 5"/>
+            </svg>
+            <span class="school__k" data-c="doctor.school1.k">Membership</span>
+            <span class="school__v" data-c="doctor.school1.v">American Dental Association</span>
+          </div>
+          <div class="school__row" data-reveal data-delay="1">
+            <svg class="ico school__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M9 2.2 15 5.6 V12.4 L9 15.8 3 12.4 V5.6 Z"/><circle cx="9" cy="9" r="2.1"/>
+            </svg>
+            <span class="school__k" data-c="doctor.school2.k">Membership</span>
+            <span class="school__v" data-c="doctor.school2.v">California Dental Association</span>
+          </div>
+          <div class="school__row" data-reveal data-delay="2">
+            <svg class="ico school__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M6 3.2 Q2.4 9 6 14.8"/><path d="M12 3.2 Q15.6 9 12 14.8"/><path d="M9 5.4 V13.4"/>
+            </svg>
+            <span class="school__k" data-c="doctor.school3.k">Membership</span>
+            <span class="school__v" data-c="doctor.school3.v">West Los Angeles Dental Society</span>
+          </div>
+          <!-- At these fees the patient is buying the laboratory as much as the
+               dentist. Naming the ceramist turns "one ceramist" from a claim
+               into a fact. Delete the row if a clinic has no named lab. -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= 02 · TREATMENTS ============================= -->
+
+<!-- ============================= 03 · APPROACH ============================= -->
+<section class="section dark approach-sec" id="approach" aria-labelledby="ap-h" data-dark>
+  <!-- the hero construction again, cropped to this window -->
+  <div class="figmark figmark--approach" data-figmark aria-hidden="true">
+    <svg viewBox="20 300 480 480" xmlns="http://www.w3.org/2000/svg">
+      <path data-draw pathLength="1" d="M60,400 a340,340 0 1,0 680,0 a340,340 0 1,0 -680,0"/>
+      <path data-draw pathLength="1" d="M40,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M280,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M252,400 a148,148 0 1,0 296,0 a148,148 0 1,0 -296,0"/>
+      <path data-draw pathLength="1" d="M60,400 L740,400"/>
+      <path data-draw pathLength="1" d="M400,40 L400,760"/>
+      <path data-draw pathLength="1" d="M386,192 L414,192 M400,178 L400,206 M386,608 L414,608 M400,594 L400,622"/>
+      <path data-draw data-accent pathLength="1" d="M140,500 Q400,626 660,500"/>
+    </svg>
+  </div>
+
+  <div class="wrap">
+
+    <div class="smark">
+      <span class="smark__n" aria-hidden="true">03</span>
+      <span class="smark__lab eyebrow">Approach</span>
+      <span class="smark__rule" data-reveal="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="approach__head">
+      <h2 class="d-l" id="ap-h" data-reveal="lines">
+        <span data-c="approach.head1">Equipped for your</span><br>
+        <span data-c="approach.head2"><em>needs</em></span>
+      </h2>
+    </div>
+
+    <ol class="steps" data-spine>
+      <li class="step" data-reveal>
+        <span class="step__n">01</span>
+        <h3 class="step__t" data-c="approach.step1.t">Consultation</h3>
+        <p class="step__p" data-c="approach.step1.p">A full examination and an unhurried conversation about what you would change, before anything is decided.</p>
+      </li>
+      <li class="step" data-reveal data-delay="1">
+        <span class="step__n">02</span>
+        <h3 class="step__t" data-c="approach.step2.t">Planning</h3>
+        <p class="step__p" data-c="approach.step2.p">Digital imaging maps the mouth so the result is designed before a single tooth is touched.</p>
+      </li>
+      <li class="step" data-reveal data-delay="2">
+        <span class="step__n">03</span>
+        <h3 class="step__t" data-c="approach.step3.t">Preparation</h3>
+        <p class="step__p" data-c="approach.step3.p">Preparation is kept to the minimum the plan actually requires, preserving natural tooth structure.</p>
+      </li>
+      <li class="step" data-reveal data-delay="3">
+        <span class="step__n">04</span>
+        <h3 class="step__t" data-c="approach.step4.t">Seating</h3>
+        <p class="step__p" data-c="approach.step4.p">Restorations are fitted and shade-matched so the result reads as your own teeth, not new ones.</p>
+      </li>
+    </ol>
+
+    <!-- signature element: a Vita shade ladder, drawn entirely in CSS -->
+    <figure class="shade" data-shade>
+      <figcaption class="shade__lab">
+        <span class="eyebrow" data-c="shade.title">Shade selection · daylight</span>
+        <span class="eyebrow eyebrow--quiet" id="shade-selected" data-c="shade.selected">Selected: A1</span>
+      </figcaption>
+      <div class="shade__ladder" role="radiogroup" aria-label="Shade selection" id="shade-ladder">
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="B1">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">B1</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="true" tabindex="0" data-code="A1">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">A1</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="B2">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">B2</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="D2">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">D2</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="A2">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">A2</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="C1">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">C1</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="C2">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">C2</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="D4">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">D4</span>
+        </button>
+        <button type="button" class="shade__col" role="radio" aria-checked="false" tabindex="-1" data-code="A3.5">
+          <span class="shade__chip" aria-hidden="true"></span>
+          <span class="shade__code">A3.5</span>
+        </button>
+      </div>
+      <p class="shade__note" data-c="shade.note">Whiter is not the goal. The goal is a shade nobody notices changed at all.</p>
+      <p class="shade__hint" data-c="shade.hint">Tap a shade to compare</p>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================= 04 · PATIENTS ============================= -->
+<section class="section words-sec" id="words" aria-labelledby="w-h">
+  <!-- the hero construction again, cropped to this window -->
+  <div class="figmark figmark--words" data-figmark aria-hidden="true">
+    <svg viewBox="180 30 440 440" xmlns="http://www.w3.org/2000/svg">
+      <path data-draw pathLength="1" d="M60,400 a340,340 0 1,0 680,0 a340,340 0 1,0 -680,0"/>
+      <path data-draw pathLength="1" d="M40,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M280,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path data-draw pathLength="1" d="M252,400 a148,148 0 1,0 296,0 a148,148 0 1,0 -296,0"/>
+      <path data-draw pathLength="1" d="M60,400 L740,400"/>
+      <path data-draw pathLength="1" d="M400,40 L400,760"/>
+      <path data-draw pathLength="1" d="M386,192 L414,192 M400,178 L400,206 M386,608 L414,608 M400,594 L400,622"/>
+      <path data-draw data-accent pathLength="1" d="M140,500 Q400,626 660,500"/>
+    </svg>
+  </div>
+
+  <div class="wrap">
+
+    <div class="smark">
+      <span class="smark__n" aria-hidden="true">04</span>
+      <span class="smark__lab eyebrow">Patients</span>
+      <span class="smark__rule" data-reveal="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="words__head">
+      <h2 class="d-l" id="w-h" data-reveal="lines">
+        <span data-c="words.head1">In their</span><br>
+        <span data-c="words.head2">own <em>words</em></span>
+      </h2>
+    </div>
+
+    <div>
+      <!-- Slot 1 -->
+      <figure class="word" data-reveal>
+        <span class="word__glyph" aria-hidden="true">&ldquo;</span>
+        <blockquote class="word__q" data-c="words.1.quote">I came to Green Dental because I was so frustrated that I had very little options that took my insurance. I was pleasantly surprised that Omar here at Green dental gave me a very good deal on my single veneer, a teeth whitening, and lastly graciously added a service I needed desperately which was my night guard for no extra cost. I was so happy with my teeth whitening because my teeth were completely tinted yellow and they came out so much whiter and they were able to match my new teeth color to my new veneer perfectly. I felt like I was in very good/gentle care with Dr. Basil Hammoudeh, DMD and that they truly wanted to help me with my dental care and I am truly happy with my veneer because it matches my whole smile. The entire staff was so attentive, kind, and very pleasantly professional. I'm no longer afraid to smile with my mouth open, thanks to Green Dental. I recommend Green Dental to anyone who needs any and all dental services, they went above and beyond.</blockquote>
+        <figcaption class="word__by">
+          <b data-c="words.1.name">Savannah M.</b>
+          <span data-c="words.1.detail">Veneers</span>
+        </figcaption>
+      </figure>
+
+      <!-- Slot 2 -->
+      <figure class="word" data-reveal data-delay="1">
+        <span class="word__glyph" aria-hidden="true">&ldquo;</span>
+        <blockquote class="word__q" data-c="words.2.quote">Green Dental has changed the way I feel about the dentist. There's a reason why they have such great reviews. From start to finish, the team took great care of me. Everyone made the experience so easy and relaxing. The front staff is very nice and accommodating. Omar helped me with financing. He made it a fast and easy process. And then the procedures and treatment. The dental hygienist who did my cleaning was gentle and empathic to my pain. It was one of the best teeth cleaning appointments I've ever had. I had to get my wisdom teeth taken out and I was stressing. But Dr. Asadi made the experience quick and painless, literally. Even the recovery afterwards was very easy and painless. The team at Green Dental are all skilled in their roles and highly skilled in customer service. Not once did I ever feel scared or neglected. I need to do more work on my teeth, but now I'm not afraid to get anything done.</blockquote>
+        <figcaption class="word__by">
+          <b data-c="words.2.name">Mark T.</b>
+          <span data-c="words.2.detail">Hygiene</span>
+        </figcaption>
+      </figure>
+
+      <!-- Slot 3 -->
+      <figure class="word" data-reveal data-delay="2">
+        <span class="word__glyph" aria-hidden="true">&ldquo;</span>
+        <blockquote class="word__q" data-c="words.3.quote">My son Jaden and I have had an excellent experience with this dental office. The entire team is friendly, professional, and genuinely caring. They always make us feel comfortable and take the time to explain everything clearly. My son received great care, and I've recently started my own treatment with braces and a crown. The staff has been supportive every step of the way, and I'm excited to see the results. The office is clean, organized, and welcoming. We highly recommend this dental office to anyone looking for quality dental care and a team that truly cares about their patients!"</blockquote>
+        <figcaption class="word__by">
+          <b data-c="words.3.name">Rami G.</b>
+          <span data-c="words.3.detail">Crown</span>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= 05 · STANDARDS ============================= -->
+<!-- Permanent. Unlike Patients above, this section never empties: it does
+     not read reviews, so it renders identically whether the clinic has
+     zero testimonials or sixty. -->
+<section class="section" id="trust" aria-labelledby="trust-h">
+  <div class="wrap">
+
+    <div class="smark">
+      <span class="smark__n" aria-hidden="true">05</span>
+      <span class="smark__lab eyebrow">Standards</span>
+      <span class="smark__rule" data-reveal="rule" aria-hidden="true"></span>
+    </div>
+
+    <h2 class="d-l trust__head" id="trust-h" data-reveal="lines" data-c="words.kicker">Built on precision.</h2>
+
+    <div class="trust-grid">
+      <article class="trust" data-reveal>
+        <h3 class="trust__t" data-c="words.trust.1.t">Digital planning</h3>
+        <p class="trust__p" data-c="words.trust.1.p">Every case starts on screen, not in the mouth. A digital scan shows the plan before a single tool touches a tooth.</p>
+      </article>
+
+      <article class="trust" data-reveal data-delay="1">
+        <h3 class="trust__t" data-c="words.trust.2.t">Precision over guesswork</h3>
+        <p class="trust__p" data-c="words.trust.2.p">Measurements come from the scan, not from memory. What is proposed is what gets made, without chairside improvising.</p>
+      </article>
+
+      <article class="trust" data-reveal data-delay="2">
+        <h3 class="trust__t" data-c="words.trust.3.t">Records that last</h3>
+        <p class="trust__p" data-c="words.trust.3.p">Your scan, photographs, and plan stay on file, so a future visit builds on what is already known about your bite.</p>
+      </article>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================= 06 · CONSULTATION ============================= -->
+<section class="section dark" id="book" aria-labelledby="b-h" data-dark>
+  <div class="wrap">
+
+    <div class="smark">
+      <span class="smark__n" aria-hidden="true">06</span>
+      <span class="smark__lab eyebrow">Consultation</span>
+      <span class="smark__rule" data-reveal="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="book__head">
+      <h2 class="d-l" id="b-h" data-reveal="lines">
+        <span data-c="book.head1">Begin with a</span><br>
+        <span data-c="book.head2"><em>conversation</em></span>
+      </h2>
+    </div>
+
+    <div class="book__grid">
+
+      <div class="info" data-reveal>
+        <div class="info__row">
+          <svg class="ico info__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path d="M5.4 2.6 7 6 5.4 7.6 Q7.6 11.4 10.4 12.6 L12 11 15.4 12.6 V15.4 Q8 15.4 2.6 5.4 Z"/>
+          </svg>
+          <span class="info__k">Telephone</span>
+          <span class="info__v"><a href="tel:+18187829500" data-c="book.phone">(818) 782-9500</a></span>
+        </div>
+        <div class="info__row">
+          <svg class="ico info__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path d="M2.4 4.4 H15.6 V13.6 H2.4 Z"/><path d="M2.4 4.8 9 9.8 15.6 4.8"/>
+          </svg>
+          <span class="info__k">Email</span>
+          <span class="info__v"><a href="mailto:info@greendental.com" data-c="book.email">info@greendental.com</a></span>
+        </div>
+        <div class="info__row">
+          <svg class="ico info__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path d="M9 15.8 Q14.4 10.2 14.4 7 A5.4 5.4 0 1 0 3.6 7 Q3.6 10.2 9 15.8 Z"/><circle cx="9" cy="7" r="2"/>
+          </svg>
+          <span class="info__k">Practice</span>
+          <span class="info__v" data-c="book.address">14401 Burbank Blvd Ste A, Sherman Oaks, CA 91401</span>
+        </div>
+        <div class="info__row">
+          <svg class="ico info__ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <circle cx="9" cy="9" r="6.4"/><path d="M9 5 V9 L11.9 10.8"/>
+          </svg>
+          <span class="info__k">Hours</span>
+          <span class="info__v" data-c="book.hours">Mon 9:00-18:00 · Tue 10:00-19:00 · Wed-Thu 9:00-18:00 · Fri 8:00-17:00 · Sat 8:00-14:00 · Sun closed</span>
+        </div>
+      </div>
+
+      <div class="plate" data-plate>
+        <span class="crop crop--tl" aria-hidden="true"></span>
+        <span class="crop crop--tr" aria-hidden="true"></span>
+        <span class="crop crop--bl" aria-hidden="true"></span>
+        <span class="crop crop--br" aria-hidden="true"></span>
+
+        <form class="form" id="form" novalidate data-reveal data-delay="1">
+          <div class="row2">
+            <div class="field" data-field>
+              <label for="f-first">First name</label>
+              <input id="f-first" name="first" type="text" autocomplete="given-name" required aria-describedby="e-first">
+              <p class="field__err" id="e-first">Enter your first name.</p>
+            </div>
+            <div class="field" data-field>
+              <label for="f-last">Last name</label>
+              <input id="f-last" name="last" type="text" autocomplete="family-name" required aria-describedby="e-last">
+              <p class="field__err" id="e-last">Enter your last name.</p>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="field" data-field>
+              <label for="f-email">Email</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email">
+              <p class="field__err" id="e-email">Enter an email we can reply to.</p>
+            </div>
+            <div class="field" data-field>
+              <label for="f-phone">Telephone</label>
+              <input id="f-phone" name="phone" type="tel" autocomplete="tel" required aria-describedby="e-phone">
+              <p class="field__err" id="e-phone">Enter a number we can reach you on.</p>
+            </div>
+          </div>
+
+          <div class="field" data-field>
+            <span class="sel__label" id="tx-label">What you are considering</span>
+
+            <!-- Custom listbox rather than <select>. A native option popup is
+                 drawn by the operating system, so it cannot be styled and the
+                 site cursor cannot survive over it. Built from real elements,
+                 both work. ARIA 1.2 combobox pattern: focus stays on the
+                 button, aria-activedescendant moves. -->
+            <div class="sel" data-select>
+              <button type="button" class="sel__btn" id="tx-btn"
+                      role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                      aria-controls="tx-list" aria-labelledby="tx-label tx-btn"
+                      aria-describedby="e-tx">
+                <span class="sel__value" id="tx-value" data-empty="true">Select one</span>
+                <svg class="sel__chev" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
+                  <path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+              </button>
+
+              <ul class="sel__list" id="tx-list" role="listbox" aria-labelledby="tx-label" hidden>
+                <li class="sel__opt" role="option" id="tx-o1" aria-selected="false" data-value="Porcelain veneers">Porcelain veneers</li>
+                <li class="sel__opt" role="option" id="tx-o2" aria-selected="false" data-value="Full-mouth reconstruction">Full-mouth reconstruction</li>
+                <li class="sel__opt" role="option" id="tx-o3" aria-selected="false" data-value="Implant restoration">Implant restoration</li>
+                <li class="sel__opt" role="option" id="tx-o4" aria-selected="false" data-value="Gum architecture">Gum architecture</li>
+                <li class="sel__opt" role="option" id="tx-o5" aria-selected="false" data-value="Invisible aligner therapy">Invisible aligner therapy</li>
+                <li class="sel__opt" role="option" id="tx-o6" aria-selected="false" data-value="Not sure yet">Not sure yet</li>
+              </ul>
+
+              <input type="hidden" id="f-tx" name="treatment" value=""
+                     data-required data-focus="#tx-btn">
+            </div>
+            <p class="field__err" id="e-tx">Choose a treatment, or select &ldquo;not sure yet&rdquo;.</p>
+          </div>
+
+          <div class="field" data-field>
+            <label for="f-msg">What you would change</label>
+            <textarea id="f-msg" name="message" rows="4" placeholder="In your own words. There is no wrong answer."></textarea>
+          </div>
+
+          <div class="form__foot">
+            <button class="btn btn--filled" type="submit" id="submit" data-magnetic>
+              <span id="submit-label">Schedule a consultation</span>
+              <span class="btn__arrow" aria-hidden="true">&#8594;</span>
+            </button>
+            <p class="form__note" data-c="book.note">We reply to every consultation request within two working days.</p>
+          </div>
+        </form>
+
+        <div class="sent" id="sent" role="status" aria-live="polite" data-on="false">
+          <p class="d-m" data-c="book.sentHead">Received.</p>
+          <p class="body" style="margin-top:1rem" data-c="book.sentBody">Reception will call to arrange a time. If it is urgent, please call the practice directly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================= 07 · LOCATION ============================= -->
+<section class="section loc" id="location" aria-labelledby="loc-h">
+  <div class="wrap">
+
+    <div class="smark">
+      <span class="smark__n" aria-hidden="true">07</span>
+      <span class="smark__lab eyebrow">Location</span>
+      <span class="smark__rule" data-reveal="rule" aria-hidden="true"></span>
+    </div>
+
+    <h2 class="d-l loc__head" id="loc-h" data-reveal="lines">
+      <span data-c="loc.head1">In Sherman Oaks,</span><br>
+      <span data-c="loc.head2">at <em>your service</em></span>
+    </h2>
+
+    <div class="loc__grid">
+
+      <div class="loc__info">
+        <address class="loc__addr d-m" data-reveal data-c="loc.address">14401 Burbank Blvd Ste A</address>
+
+        <div class="rating" data-reveal data-delay="1">
+          <p class="rating__score" data-c="loc.score">4.6</p>
+          <div class="rating__right">
+            <span class="stars" role="img" aria-label="Rated 5 out of 5">
+              <svg class="star is-on" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+              <svg class="star is-on" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+              <svg class="star is-on" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+              <svg class="star is-on" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+              <svg class="star is-on" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            </span>
+            <p class="rating__src" data-c="loc.source">358 reviews on Google</p>
+          </div>
+        </div>
+
+        <div class="phones" data-reveal data-delay="2">
+          <a class="phone" href="tel:+18187829500">
+            <span class="phone__k" data-c="loc.phone1.label">Reception</span>
+            <span class="phone__v" data-c="loc.phone1.value">(818) 782-9500</span>
+          </a>
+        </div>
+
+        <a class="btn loc__btn" data-c="map.directions" data-magnetic
+           href="https://www.google.com/maps/dir/?api=1&destination=14401+Burbank+Blvd+Ste+A%2C+Sherman+Oaks%2C+CA+91401"
+           target="_blank" rel="noopener noreferrer">
+          <span>Get directions</span>
+          <span class="btn__arrow" aria-hidden="true">&#8594;</span>
+        </a>
+      </div>
+
+      <!-- Info comes first in the DOM so keyboard order on desktop reads
+           address -> phones -> directions before entering the map iframe.
+           The map is lifted above it on phones with order:-1. -->
+      <div class="loc__map" data-reveal>
+        <div class="map" data-map data-armed="false">
+          <span class="crop crop--tl" aria-hidden="true"></span>
+          <span class="crop crop--tr" aria-hidden="true"></span>
+          <span class="crop crop--bl" aria-hidden="true"></span>
+          <span class="crop crop--br" aria-hidden="true"></span>
+          <div class="map__frame">
+            <!-- the iframe is a separate document: `cursor:none` cannot reach
+                 inside it, so the custom cursor stands down at its edge -->
+            <div class="map__plate" data-cursor-off>
+              <!-- The shield comes first in the DOM so a keyboard reaches it
+                   before falling into the map, which is full of focusable
+                   Google controls. z-index handles the visual stacking. -->
+              <button type="button" class="map__shield" data-map-shield>
+                <span class="map__shield-label" data-c="map.shield">Open in Google Maps</span>
+              </button>
+
+              <iframe
+                class="map__iframe"
+                data-c="map.embed"
+                src="https://www.google.com/maps?q=14401%20Burbank%20Blvd%20Ste%20A%2C%20Sherman%20Oaks%2C%20CA%2091401&output=embed"
+                title="Dr. Basil Hammoudeh, DMD — 14401 Burbank Blvd Ste A"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Reviews are pasted in per clinic, real and verbatim. These are slots. -->
+    <div class="revs">
+      <figure class="word" data-reveal>
+        <blockquote class="word__q" data-c="review.1.quote">Thank you Green Dental and Orthodontics for helping getting me teeth fix with braces for my self and ortho Aligners for my daughter. I Wouldn't be able to have done it with the help of Omar and the entire staff. I recommend Green dental to any one looking for a great dentist.</blockquote>
+        <figcaption class="word__by">
+          <b data-c="review.1.name">CRISTINA R.</b>
+          <span class="stars" role="img" aria-label="Rated 5 out of 5">
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+          </span>
+        </figcaption>
+      </figure>
+
+      <figure class="word" data-reveal data-delay="1">
+        <blockquote class="word__q" data-c="review.2.quote">Green Dental staff is the best. I've been coming to Green Dental since 2014 and I never go anywhere else especially for cleaning with Tatiana; she's amazing and very professional and expert . Omar always helps with my treatment getting done ; he is also as wonderful.</blockquote>
+        <figcaption class="word__by">
+          <b data-c="review.2.name">Angela T.</b>
+          <span class="stars" role="img" aria-label="Rated 5 out of 5">
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+          </span>
+        </figcaption>
+      </figure>
+
+      <figure class="word" data-reveal data-delay="2">
+        <blockquote class="word__q" data-c="review.3.quote">Omar at Green Dental & Orthodontics was amazing! He was professional, kind, and made the whole visit feel easy and comfortable. You can tell he really cares about his patients and takes the time to explain everything. Highly recommend asking for Omar if you go!</blockquote>
+        <figcaption class="word__by">
+          <b data-c="review.3.name">Idallis E.</b>
+          <span class="stars" role="img" aria-label="Rated 5 out of 5">
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+            <svg class="star is-on" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6 9.53 5.9 14.09 6.02 10.47 8.8 11.76 13.18 8 10.6 4.24 13.18 5.53 8.8 1.91 6.02 6.47 5.9Z"/></svg>
+          </span>
+        </figcaption>
+      </figure>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<!-- ============================= FOOTER ============================= -->
+<footer class="foot">
+
+  <!-- the hero construction returns, cropped and near-silent -->
+  <div class="foot__mark" aria-hidden="true">
+    <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <path d="M60,400 a340,340 0 1,0 680,0 a340,340 0 1,0 -680,0"/>
+      <path d="M40,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path d="M280,400 a240,240 0 1,0 480,0 a240,240 0 1,0 -480,0"/>
+      <path d="M60,400 L740,400"/>
+      <path d="M140,500 Q400,626 660,500"/>
+    </svg>
+  </div>
+
+  <div class="wrap">
+    <div class="foot__grid">
+      <div class="foot__col foot__brand">
+        <span class="brand">
+          <span class="brand__name" data-c="brand.name">Dr. Basil Hammoudeh, DMD</span>
+          <span class="brand__tag" data-c="brand.tagline">Cosmetic Dentistry · Sherman Oaks</span>
+        </span>
+      </div>
+      <div class="foot__col">
+        <h3>Practice</h3>
+        <p data-c="footer.address">14401 Burbank Blvd Ste A, Sherman Oaks, CA 91401</p>
+      </div>
+      <div class="foot__col">
+        <h3>Contact</h3>
+        <a href="tel:+18187829500" data-c="book.phone">(818) 782-9500</a>
+        <a href="mailto:info@greendental.com" data-c="book.email">info@greendental.com</a>
+      </div>
+    </div>
+    <div class="foot__legal">
+      <span data-c="footer.legal">© 2026 Green Dental & Orthodontics</span>
+      <span data-c="footer.note">Cosmetic & general dentistry</span>
+      <a class="foot__credit" href="https://hs-frontend.online/" target="_blank" rel="noopener noreferrer" data-c="footer.credit">Site by hs-frontend.online</a>
+    </div>
+  </div>
+</footer>
+
+<p class="index" id="index" aria-hidden="true">&mdash; <b>The Dentist</b></p>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dentist",
+  "name": "Green Dental & Orthodontics",
+  "url": "https://greendental.com",
+  "telephone": "+18187829500",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "14401 Burbank Blvd Ste A",
+    "addressLocality": "Sherman Oaks",
+    "addressRegion": "CA",
+    "postalCode": "91401",
+    "addressCountry": "US"
+  },
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Monday"
+      ],
+      "opens": "09:00",
+      "closes": "18:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Tuesday"
+      ],
+      "opens": "10:00",
+      "closes": "19:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Wednesday",
+        "Thursday"
+      ],
+      "opens": "09:00",
+      "closes": "18:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Friday"
+      ],
+      "opens": "08:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Saturday"
+      ],
+      "opens": "08:00",
+      "closes": "14:00"
+    }
+  ],
+  "priceRange": "$$$$",
+  "medicalSpecialty": "Dentistry"
+}
+</script>
+</body>
+</html>
